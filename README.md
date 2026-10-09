@@ -3,10 +3,11 @@
 What is my shutdown time and gaming limit today, and what do I still need to do
 to extend them?
 
-A read-only desktop status app over [`earned_time`](https://github.com/kuhyx/utils/tree/main/earned_time),
+A desktop status app over [`earned_time`](https://github.com/kuhyx/utils/tree/main/earned_time),
 the one registry of what every gate (workout, LeetCode, reading, Anki,
 Automation) earns. It never writes the schedule or the budget. The
-consumers (screen-locker, steam-backlog-enforcer) do that. It only reports.
+consumers (screen-locker, steam-backlog-enforcer) do that. It reports, and
+publishes the report to Firebase for the phone app (`--sync`, below).
 
 ## Usage
 
@@ -14,12 +15,13 @@ consumers (screen-locker, steam-backlog-enforcer) do that. It only reports.
 daily-limits                # human summary
 daily-limits --json         # the JSON contract (below)
 daily-limits --write-cache  # same JSON, atomically, to $XDG_RUNTIME_DIR/daily-limits.json
+daily-limits --sync         # --write-cache, then the Firebase tick (below)
 daily-limits --gui          # small Tk popup (Esc / q closes; refreshes every minute)
 ```
 
 `install.sh` installs the package into the system python's user site-packages
-and enables `daily-limits.timer` (every 60 s: `--write-cache`, read by the
-i3blocks block). `install.sh --dry-run` prints every step instead.
+and enables `daily-limits.timer` (every 60 s: `--sync`; the cache it writes
+first is read by the i3blocks block). `install.sh --dry-run` prints every step instead.
 
 ## JSON contract
 
@@ -62,3 +64,25 @@ Fixed: the i3blocks block parses it.
 | counted (workout) | `earned_time.credit_units(...)` on its ledger; `unknown` while the installed earned_time gives it no ledger (0.3.0) |
 
 See `DOCS-sources.md` for the details and the known divergences.
+
+## Firebase (`--sync`)
+
+Through `crdt_sync.firebase_client_for("daily_limits")` (session cached in
+`~/.config/daily_limits/firebase_auth.json`). Logical paths; on the wire every
+`.` in a key is escaped (`status.json` is stored as `status~2Ejson`) and every
+value is a JSON **string** holding the serialized document:
+
+- `daily_limits/status.json` (PC writes): the contract above plus
+  `published_at` (unix int) and `device_id` (this install's uuid,
+  `~/.local/share/daily-limits/.device_id`). Written when the content changes
+  (ignoring `generated_at`) and at least every 10 min.
+- `daily_limits/requests/<id>.json` (phone writes): `{"id", "kind":
+  "refresh"|"rest_day", "date": "YYYY-MM-DD"|null, "created_at", "device_id"}`.
+- `daily_limits/results/<id>.json` (PC writes): `{"id", "ok", "message",
+  "handled_at"}`; `<id>` is the request's filename. Deleted after 7 days.
+
+Each request is answered once (`~/.local/share/daily-limits/handled_requests.json`),
+then deleted. Older than 10 min: `ok=false, "expired"`. `refresh` republishes.
+`rest_day` runs `/usr/bin/python3 -m screen_locker.screen_lock
+--declare-rest-day <date>` (screen-locker applies every rule) and republishes.
+A Firebase failure is one warning; the cache is written before any network call.

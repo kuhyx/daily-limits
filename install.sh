@@ -3,9 +3,10 @@
 # install.sh -- install daily-limits and its every-minute cache timer.
 #
 # Installs into the SYSTEM python's user site-packages (not a venv), because
-# that is what the systemd user unit runs; earned-time comes in through the
-# pinned git URL in pyproject.toml, the same pin both consumers use. Then
-# verifies the imports with that exact interpreter and enables the timer.
+# that is what the systemd user unit runs; earned-time and crdt-sync come in
+# through the pinned git URLs in pyproject.toml (the pins the other consumers
+# use). Then verifies the imports with that exact interpreter and enables the
+# timer.
 # Idempotent. `--dry-run` prints every step instead of running it.
 # ============================================================================
 
@@ -44,9 +45,11 @@ install_package() {
     # earned_time is shared with the root gaming daemon and screen-locker. If
     # it is already there, keep it: the URL pin would otherwise reinstall --
     # and, once the consumers are re-pinned to a newer tag, DOWNGRADE -- it.
+    # crdt_sync is shared the same way (every Firebase app), so the same rule
+    # covers both: --no-deps only when neither would be installed by the pins.
     local deps=()
-    if "$SYSTEM_PYTHON" -c 'import earned_time' 2>/dev/null; then
-        log "earned_time already installed; keeping it (--no-deps)"
+    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync' 2>/dev/null; then
+        log "earned_time and crdt_sync already installed; keeping them (--no-deps)"
         deps=(--no-deps)
     fi
     run "$SYSTEM_PYTHON" -m pip install --user --break-system-packages -q \
@@ -55,13 +58,14 @@ install_package() {
 
 verify_runtime() {
     log "verifying imports and the entry point"
-    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, earned_time, tkinter" ||
+    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, earned_time, crdt_sync, tkinter" ||
         fail "a runtime dependency is missing from the system python"
     if ((!DRY_RUN)); then
         [[ -x "$BIN" ]] || fail "no entry point at $BIN"
     fi
     # A run that cannot write the cache is the timer's failure; catch it now.
-    run "$BIN" --write-cache || fail "daily-limits --write-cache"
+    # (--sync exits 0 when only Firebase failed; that is a logged warning.)
+    run "$BIN" --sync || fail "daily-limits --sync"
 }
 
 install_units() {

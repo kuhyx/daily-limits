@@ -8,11 +8,15 @@ import os
 from pathlib import Path
 import runpy
 import sys
+from typing import TYPE_CHECKING
 
 import pytest
 
-from daily_limits import _cli, _gui, _paths, _report
+from daily_limits import _atomic, _cli, _gui, _paths, _report, _sync
 from daily_limits.tests import _samples
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @pytest.fixture(autouse=True)
@@ -46,6 +50,23 @@ def test_write_cache_without_a_runtime_dir_fails(
     assert "XDG_RUNTIME_DIR is not set" in capsys.readouterr().err
 
 
+def test_sync_writes_the_cache_then_ticks(monkeypatch: pytest.MonkeyPatch) -> None:
+    target = Path(os.environ["XDG_RUNTIME_DIR"]) / _paths.CACHE_NAME
+    ticks: list[_report.Report] = []
+
+    def tick(report: _report.Report, rebuild: Callable[[], _report.Report]) -> None:
+        # The cache is already on disk before Firebase is touched.
+        assert json.loads(target.read_text(encoding="utf-8")) == report
+        target.unlink()
+        ticks.append(report)
+        assert rebuild() == report
+        assert target.exists()
+
+    monkeypatch.setattr(_sync, "tick", tick)
+    assert _cli.main(["--sync"]) == 0
+    assert ticks == [_samples.report()]
+
+
 def test_write_atomic_removes_its_temp_file_on_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -57,7 +78,7 @@ def test_write_atomic_removes_its_temp_file_on_failure(
     monkeypatch.setattr(Path, "replace", refuse)
     target = tmp_path / "out.json"
     with pytest.raises(OSError, match="replace refused"):
-        _cli.write_atomic(target, "{}")
+        _atomic.write_atomic(target, "{}")
     assert not list(tmp_path.glob(".out.json.*"))
     assert not target.exists()
 

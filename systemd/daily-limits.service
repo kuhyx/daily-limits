@@ -1,8 +1,9 @@
 [Unit]
-Description=Refresh today's limits cache ($XDG_RUNTIME_DIR/daily-limits.json)
+Description=Refresh today's limits cache and sync it with the phone over Firebase
 
 [Service]
 Type=oneshot
-# Read-only apart from the cache file; the i3blocks block reads that file.
-ExecStart=%h/.local/bin/daily-limits --write-cache
+# Writes the cache the i3blocks block reads, then publishes it to Firebase and
+# answers the phone's requests. A Firebase failure is a warning, never a failure.
+ExecStart=%h/.local/bin/daily-limits --sync
 Nice=10

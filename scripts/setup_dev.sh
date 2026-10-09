@@ -2,7 +2,7 @@
 # ============================================================================
 # setup_dev.sh -- the dev venv the pre-commit gate and the test suite run in.
 #
-# .venv holds daily-limits (editable, with earned-time from its pin)
+# .venv holds daily-limits (editable, with earned-time and crdt-sync from their pins)
 # plus the pinned test and lint tools. Idempotent.
 # ============================================================================
 
@@ -17,4 +17,4 @@ if [[ ! -x "${VENV}/bin/python" ]]; then
 fi
 "${VENV}/bin/python" -m pip install --quiet --upgrade pip
 "${VENV}/bin/python" -m pip install --quiet -e "${REPO_DIR}[dev]"
-"${VENV}/bin/python" -c "import daily_limits, earned_time, pytest, mypy, pylint; print('dev venv OK')"
+"${VENV}/bin/python" -c "import daily_limits, earned_time, crdt_sync, pytest, mypy, pylint; print('dev venv OK')"

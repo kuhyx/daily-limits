@@ -3,10 +3,12 @@ name = "daily-limits"
 version = "0.1.0"
 description = "Today's shutdown time and gaming limit, and what is left to extend them"
 requires-python = ">=3.14"
-# earned_time: the one registry of what every gate earns (the only dependency;
-# everything else is stdlib, tkinter included).
+# earned_time: the one registry of what every gate earns. crdt-sync: the
+# Firebase RTDB client --sync publishes through (same tag pin as home-guard).
+# Everything else is stdlib, tkinter included.
 dependencies = [
     "earned-time @ git+https://github.com/kuhyx/utils@earned-time-v0.4.0#subdirectory=earned_time",
+    "crdt-sync @ git+https://github.com/kuhyx/utils@crdt-sync-v0.9.1#subdirectory=crdt-sync",
 ]
 
 [project.scripts]

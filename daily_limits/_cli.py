@@ -3,7 +3,9 @@
 
 Modes: a human summary (default), ``--json`` (the contract), ``--write-cache``
 (the contract, atomically, to ``$XDG_RUNTIME_DIR/daily-limits.json`` for the
-i3blocks block and the systemd timer) and ``--gui`` (a small Tk popup).
+i3blocks block), ``--sync`` (``--write-cache``, then the Firebase tick the
+systemd timer runs: publish the status, answer the phone) and ``--gui`` (a
+small Tk popup).
 """
 
 from __future__ import annotations
@@ -14,10 +16,10 @@ import logging
 import os
 from pathlib import Path
 import sys
-import tempfile
 from typing import TYPE_CHECKING
 
-from daily_limits import _gui, _paths, _render, _report
+from daily_limits import _gui, _paths, _render, _report, _sync
+from daily_limits._atomic import write_atomic
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -32,6 +34,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help=f"write the JSON atomically to $XDG_RUNTIME_DIR/{_paths.CACHE_NAME}",
     )
+    mode.add_argument(
+        "--sync",
+        action="store_true",
+        help="--write-cache, then publish to Firebase and answer the phone's requests",
+    )
     mode.add_argument("--gui", action="store_true", help="open a small Tk popup")
     return parser
 
@@ -45,18 +52,11 @@ def cache_path() -> Path | None:
     return Path(runtime) / _paths.CACHE_NAME if runtime else None
 
 
-def write_atomic(target: Path, text: str) -> None:
-    """Write ``text`` to ``target`` via a same-directory temp file + rename."""
-    handle, temp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.")
-    temp = Path(temp_name)
-    try:
-        with os.fdopen(handle, "w", encoding="utf-8") as stream:
-            stream.write(text)
-        temp.chmod(0o644)
-        temp.replace(target)
-    except BaseException:
-        temp.unlink(missing_ok=True)
-        raise
+def _refresh_cache(target: Path) -> _report.Report:
+    """Build today's report and write it to the cache; return the report."""
+    report = _report.build()
+    write_atomic(target, json.dumps(report) + "\n")
+    return report
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -65,17 +65,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.gui:
         return _gui.run()
-    report = _report.build()
-    if args.json:
-        sys.stdout.write(json.dumps(report) + "\n")
-    elif args.write_cache:
+    if args.write_cache or args.sync:
         target = cache_path()
         if target is None:
             sys.stderr.write(
                 "daily-limits: XDG_RUNTIME_DIR is not set; cannot place the cache\n"
             )
             return 1
-        write_atomic(target, json.dumps(report) + "\n")
+        # The cache is written before any network call, so an unreachable
+        # Firebase can never cost the i3blocks block its numbers.
+        report = _refresh_cache(target)
+        if args.sync:
+            _sync.tick(report, lambda: _refresh_cache(target))
+        return 0
+    report = _report.build()
+    if args.json:
+        sys.stdout.write(json.dumps(report) + "\n")
     else:
         sys.stdout.write(_render.summary(report) + "\n")
     return 0
