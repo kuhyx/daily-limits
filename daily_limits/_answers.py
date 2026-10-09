@@ -59,4 +59,4 @@ def answer(item: Earner, day: date, moment: datetime) -> Answer:
 
 def answers_for(day: date, moment: datetime) -> dict[str, Answer]:
     """Every registered earner's answer for ``day``; ``None`` means unknown."""
-    return {item.name: answer(item, day, moment) for item in earned_time.EARNERS}
+    return {item.name: answer(item, day, moment) for item in _compat.earners(day)}

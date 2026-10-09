@@ -83,10 +83,10 @@ def hhmm(minutes: int) -> str:
     return f"{hours:02d}:{rest:02d}"
 
 
-def _status(answer: int | None) -> Status:
+def _status(item: Earner, answer: int | None) -> Status:
     if answer is None:
         return "unknown"
-    return "done" if answer > 0 else "todo"
+    return "todo" if _compat.units_left(item, answer) else "done"
 
 
 def _todo(resolution: Resolution) -> list[TodoRow]:
@@ -94,12 +94,12 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
     rows: list[TodoRow] = []
     shutdown = resolution.shutdown_minutes
     for term in resolution.terms:
-        if term.answer is not None and term.answer > 0:
-            continue
         item: Earner = term.earner
+        if term.answer is not None and not _compat.units_left(item, term.answer):
+            continue
         shutdown = min(
             _compat.shutdown_ceiling(resolution.day),
-            shutdown + _compat.shutdown_minutes(item, resolution.day),
+            shutdown + _compat.shutdown_left(item, term.answer, resolution.day),
         )
         rows.append(
             {
@@ -147,9 +147,10 @@ def build(now: datetime | None = None) -> Report:
             {
                 "name": term.earner.name,
                 "label": term.earner.label,
-                "status": _status(term.answer),
-                "shutdown_minutes": _compat.shutdown_minutes(term.earner, day),
-                "gaming_minutes": term.earner.gaming_minutes,
+                "status": _status(term.earner, term.answer),
+                # A full day's worth, like gaming: the tutor's 4 blocks, not 1.
+                "shutdown_minutes": _compat.shutdown_left(term.earner, 0, day),
+                "gaming_minutes": _compat.gaming_most(term.earner),
             }
             for term in resolution.terms
         ],

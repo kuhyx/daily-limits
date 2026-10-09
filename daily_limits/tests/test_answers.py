@@ -115,4 +115,4 @@ def test_answers_for_asks_every_registered_earner(
 ) -> None:
     monkeypatch.setattr(_answers, "answer", lambda item, day, moment: item.name)
     answers = _answers.answers_for(DAY, at("2026-10-09T10:00"))
-    assert answers == {item.name: item.name for item in earned_time.EARNERS}
+    assert answers == {item.name: item.name for item in _compat.earners(DAY)}

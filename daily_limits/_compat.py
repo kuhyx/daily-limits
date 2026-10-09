@@ -60,3 +60,36 @@ def credit_units(
         return helper(item, ledger, key_file, day)
     done: bool | None = earned_time.done_today(item, ledger, key_file, now=cutoff)
     return done
+
+
+def earners(day: date) -> tuple[Earner, ...]:
+    """The registry in force on ``day`` (``earners_for``, earned_time >= 0.5)."""
+    helper: Callable[[date], tuple[Earner, ...]] | None = getattr(
+        earned_time, "earners_for", None
+    )
+    return tuple(earned_time.EARNERS if helper is None else helper(day))
+
+
+def units_left(item: Earner, answer: int | None) -> int:
+    """Units ``item`` can still pay: 1 until done, a capped gate's remainder.
+
+    A capped counted gate is the tutor (4 blocks a day).
+    """
+    done = answer or 0
+    most: int | None = getattr(item, "max_units", None)
+    if most is None:
+        return 0 if done > 0 else 1
+    return max(0, most - done)
+
+
+def shutdown_left(item: Earner, answer: int | None, day: date) -> int:
+    """Shutdown minutes ``item``'s remaining units would still add on ``day``."""
+    most: int | None = getattr(item, "max_units", None)
+    if most is None:
+        return shutdown_minutes(item, day)
+    return int(item.shutdown_for(most, day) - item.shutdown_for(answer or 0, day))
+
+
+def gaming_most(item: Earner) -> int:
+    """Gaming minutes a fully done day pays (the tutor's 4 blocks, not one)."""
+    return int(getattr(item, "max_gaming_minutes", item.gaming_minutes))

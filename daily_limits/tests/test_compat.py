@@ -92,3 +92,39 @@ def test_credit_units_falls_back_to_done_today(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(earned_time, "done_today", done)
     assert _compat.credit_units(ITEM, Path("l"), Path("k"), DAY, cutoff) is True
     assert seen == [(ITEM, Path("l"), Path("k"), cutoff)]
+
+
+class _Capped:
+    """A capped counted gate (the tutor): 4 units, 13 shutdown minutes each."""
+
+    max_units = 4
+    gaming_minutes = 15
+    max_gaming_minutes = 60
+
+    def shutdown_for(self, units: int, day: date) -> int:
+        del day
+        return 13 * min(units, self.max_units)
+
+
+def test_units_left_for_a_flat_and_a_capped_earner() -> None:
+    capped = _Capped()
+    assert [_compat.units_left(ITEM, a) for a in (None, 0, 1)] == [1, 1, 0]
+    assert [_compat.units_left(capped, a) for a in (None, 1, 4, 5)] == [4, 3, 0, 0]
+
+
+def test_shutdown_left_and_gaming_most() -> None:
+    capped = _Capped()
+    assert _compat.shutdown_left(capped, 1, DAY) == 39
+    assert _compat.shutdown_left(capped, None, DAY) == 52
+    assert _compat.shutdown_left(ITEM, 0, DAY) == _compat.shutdown_minutes(ITEM, DAY)
+    assert _compat.gaming_most(capped) == 60
+    assert _compat.gaming_most(ITEM) == 7
+
+
+def test_earners_falls_back_to_the_static_registry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delattr(earned_time, "earners_for", raising=False)
+    assert _compat.earners(DAY) == tuple(earned_time.EARNERS)
+    monkeypatch.setattr(earned_time, "earners_for", lambda day: (ITEM,), raising=False)
+    assert _compat.earners(DAY) == (ITEM,)

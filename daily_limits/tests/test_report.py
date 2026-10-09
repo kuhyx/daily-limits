@@ -16,7 +16,18 @@ from daily_limits.tests._samples import at
 if TYPE_CHECKING:
     from daily_limits._answers import Answer
 
-NAMES = [item.name for item in earned_time.EARNERS]
+# The registry of the pinned test day; the tutor cutover switches it.
+DAY = date(2026, 10, 9)
+REGISTRY = _compat.earners(DAY)
+NAMES = [item.name for item in REGISTRY]
+
+
+def _full(item: object) -> int:
+    """Units that finish ``item``: a capped gate's all (the tutor's 4), else 1."""
+    most: int | None = getattr(item, "max_units", None)
+    return most or 1
+
+
 CONTRACT_KEYS = {"date", "generated_at", "shutdown", "gaming", "earners", "todo"}
 
 
@@ -68,8 +79,8 @@ def test_nothing_done_lists_every_earner_cumulatively(
     assert [row["status"] for row in report["earners"]] == ["todo"] * len(NAMES)
     running = base.shutdown_minutes
     expected = []
-    for item in earned_time.EARNERS:
-        running = min(ceiling, running + _compat.shutdown_minutes(item, day))
+    for item in REGISTRY:
+        running = min(ceiling, running + _compat.shutdown_left(item, 0, day))
         expected.append(
             {
                 "name": item.name,
@@ -79,18 +90,18 @@ def test_nothing_done_lists_every_earner_cumulatively(
             }
         )
     assert report["todo"] == expected
-    assert report["earners"][0] == {
-        "name": earned_time.EARNERS[0].name,
-        "label": earned_time.EARNERS[0].label,
+    assert report["earners"][-1] == {
+        "name": REGISTRY[-1].name,
+        "label": REGISTRY[-1].label,
         "status": "todo",
-        "shutdown_minutes": _compat.shutdown_minutes(earned_time.EARNERS[0], day),
-        "gaming_minutes": earned_time.EARNERS[0].gaming_minutes,
+        "shutdown_minutes": _compat.shutdown_left(REGISTRY[-1], 0, day),
+        "gaming_minutes": _compat.gaming_most(REGISTRY[-1]),
     }
 
 
 def test_done_and_unknown_earners(monkeypatch: pytest.MonkeyPatch) -> None:
     day = date(2026, 10, 9)
-    answers: dict[str, Answer] = dict.fromkeys(NAMES, 1)
+    answers: dict[str, Answer] = {item.name: _full(item) for item in REGISTRY}
     answers[NAMES[0]] = None
     _answers_by_day(monkeypatch, {day: answers})
     report = _report.build(at("2026-10-09T10:00"))
@@ -126,9 +137,12 @@ def test_before_six_the_gaming_block_is_yesterdays(
 
 
 def test_build_defaults_to_now(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        _answers, "answers_for", lambda day, moment: dict.fromkeys(NAMES, 0)
-    )
+    def nothing(day: date, moment: object) -> dict[str, Answer]:
+        del moment
+        return {item.name: 0 for item in _compat.earners(day)}
+
+    monkeypatch.setattr(_answers, "answers_for", nothing)
     report = _report.build()
     assert report["generated_at"] > 0
-    assert len(report["earners"]) == len(NAMES)
+    today = date.fromisoformat(report["date"])
+    assert len(report["earners"]) == len(_compat.earners(today))
