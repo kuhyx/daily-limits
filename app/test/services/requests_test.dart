@@ -68,6 +68,11 @@ void main() {
       );
       expect(r.isPending, isTrue);
       expect(r.settle(timedOut: true).isPending, isFalse);
+      expect(r.settle(timedOut: true).isAnswered, isFalse);
+      expect(
+        r.settle(result: const RequestResult(ok: true, message: '')).isAnswered,
+        isTrue,
+      );
       final answered = r.settle(
         result: const RequestResult(ok: true, message: ''),
       );

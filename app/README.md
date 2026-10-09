@@ -20,9 +20,13 @@ Paths and request/result shapes: root [README "Firebase"](../README.md#firebase-
 Timing: the PC publishes `status.json` on change and at least every 10 min. The
 phone writes `requests/<uuid>.json` (`id` = that uuid; a request written as an
 object rather than a JSON string is answered as malformed), polls
-`results/<uuid>.json` every 5 s, and gives up after 3 min ("PC didn't answer").
-The PC answers requests up to 10 min old, then `expired`. The phone never
-deletes anything.
+`results/<uuid>.json` every 5 s for 3 min, then shows "no answer yet (PC may be
+off)" and re-enables the button. It keeps reading the result of every
+unanswered request on the 1-min status pass and every background run until an
+answer arrives (which replaces the line, and notifies for a rest day) or the
+request is pruned after 2 days. The PC answers every request it sees -- up to
+10 min old it acts or refuses, older ones get `expired` -- and keeps results 7
+days. The phone never deletes anything.
 
 ## Layout (`lib/`)
 
@@ -109,10 +113,8 @@ No mocking library: plugins are faked at their method channels
 
 ## Known limitations
 
-- A rest-day answer arriving after the phone's 3-min window is never shown
-  (the PC answers for up to 10 min); a later background run marks it timed out.
-- `LocalCache.save()` merges `requests` with the on-disk copy by id (settled
-  beats pending). That narrows the cross-isolate lost-write race to the gap
+- `LocalCache.save()` merges `requests` with the on-disk copy by id (answered
+  beats timed out beats pending). That narrows the cross-isolate lost-write race to the gap
   between its re-read and its rename; it does not close it (no cross-isolate
   lock).
 - The shutdown icon is 🔌, not the PC's ⏻: Android has no glyph for ⏻.

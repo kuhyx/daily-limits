@@ -2,7 +2,8 @@
 ///
 /// The PC enforces every limit; the phone only asks. The PC deletes each
 /// request once it has written the result and prunes old results, so the phone
-/// never deletes anything -- it just stops polling.
+/// never deletes anything -- it just keeps reading the result of every
+/// unanswered request until one arrives or the cache prunes the request.
 library;
 
 import 'dart:convert';
@@ -11,7 +12,8 @@ import 'package:crdt_sync/crdt_sync.dart';
 import 'package:daily_limits/services/sync_app.dart';
 import 'package:uuid/uuid.dart';
 
-/// How long the phone waits for an answer before saying the PC did not reply.
+/// How long the phone shows a request as waiting before saying the PC has not
+/// answered yet. Display-only: an answer arriving later still replaces it.
 const Duration kAnswerTimeout = Duration(minutes: 3);
 
 /// A request kind: `refresh` or `rest_day`.
@@ -97,11 +99,15 @@ class SentRequest {
   /// The PC's answer, once read.
   final RequestResult? result;
 
-  /// Whether the phone gave up waiting ([kAnswerTimeout]).
+  /// Whether [kAnswerTimeout] passed with no answer. The phone still collects
+  /// a late answer; this only changes the line and re-enables the button.
   final bool timedOut;
 
-  /// Still waiting for the PC.
+  /// Still waiting for the PC, within [kAnswerTimeout].
   bool get isPending => result == null && !timedOut;
+
+  /// Whether the PC's answer has been read.
+  bool get isAnswered => result != null;
 
   /// A copy with the answer or the timeout recorded.
   SentRequest settle({RequestResult? result, bool timedOut = false}) =>

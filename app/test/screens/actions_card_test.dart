@@ -86,11 +86,43 @@ void main() {
     expect(find.text('Rest day 2026-10-10: waiting for the PC…'), findsOne);
   });
 
-  testWidgets('timed out request says the PC did not answer', (tester) async {
-    await pump(tester, requests: [request(timedOut: true)]);
-    expect(find.text("Refresh: PC didn't answer"), findsOneWidget);
+  testWidgets('timed out request says no answer yet and re-enables', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      requests: [
+        request(timedOut: true),
+        request(kind: RequestKind.restDay, date: '2026-10-10', timedOut: true),
+      ],
+    );
+    expect(
+      find.text(
+        'Refresh: no answer yet (PC may be off); it will show here when it '
+        'does',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Rest day 2026-10-10: no answer yet (PC may be off); it will show '
+        'here when it does',
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(enabled(tester, 'Refresh now'), isTrue);
+    expect(enabled(tester, 'Declare rest day'), isTrue);
+  });
+
+  testWidgets('a late answer replaces the "no answer yet" line', (
+    tester,
+  ) async {
+    final late = request(timedOut: true)
+        .settle(result: const RequestResult(ok: true, message: 'republished'));
+    await pump(tester, requests: [late]);
+    expect(find.text('Refresh: republished'), findsOneWidget);
+    expect(find.textContaining('no answer yet'), findsNothing);
   });
 
   testWidgets('ok result shows the message, or "done" when empty', (

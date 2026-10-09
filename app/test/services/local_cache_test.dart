@@ -6,13 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fakes.dart';
 
-SentRequest _req(String id, DateTime at, {bool answered = false}) =>
-    SentRequest(
-      id: id,
-      kind: RequestKind.refresh,
-      createdAt: at,
-      result: answered ? const RequestResult(ok: true, message: '') : null,
-    );
+SentRequest _req(
+  String id,
+  DateTime at, {
+  bool answered = false,
+  bool timedOut = false,
+}) => SentRequest(
+  id: id,
+  kind: RequestKind.refresh,
+  createdAt: at,
+  result: answered ? const RequestResult(ok: true, message: '') : null,
+  timedOut: timedOut,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +103,27 @@ void main() {
         LocalCache.mergeRequests([pending], [pending]).single.isPending,
         isTrue,
       );
+    });
+
+    test('answered beats timed out beats pending, whichever side', () {
+      final pending = _req('x', at);
+      final timedOut = _req('x', at, timedOut: true);
+      final answered = _req('x', at, answered: true);
+      for (final (a, b, winner) in [
+        (answered, timedOut, answered),
+        (timedOut, answered, answered),
+        (timedOut, pending, timedOut),
+        (pending, timedOut, timedOut),
+        (timedOut, timedOut, timedOut),
+      ]) {
+        expect(LocalCache.mergeRequests([a], [b]).single, same(winner));
+      }
+    });
+
+    test('on a tie the in-memory copy wins', () {
+      final disk = _req('x', at, timedOut: true);
+      final mine = _req('x', at, timedOut: true);
+      expect(LocalCache.mergeRequests([disk], [mine]).single, same(mine));
     });
 
     test('sorts the union oldest first', () {

@@ -1,5 +1,5 @@
 /// One full sync pass, shared by the app and the 15-minute background task:
-/// read the status, collect answers to pending requests, then update the
+/// read the status, collect answers to unanswered requests, then update the
 /// cache, the widget and the notifications from whatever is now known.
 library;
 
@@ -78,12 +78,13 @@ Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
   );
 }
 
-/// Reads answers for every pending request in [cache]; gives up on any older
-/// than [kAnswerTimeout]. Returns whether anything changed.
+/// Reads answers for every unanswered request in [cache], including ones
+/// already timed out, and marks a pending one older than [kAnswerTimeout] as
+/// timed out. Returns whether anything changed.
 Future<bool> collectAnswers(RemoteStore client, LocalCache cache) async {
   var changed = false;
   for (final request in [...cache.requests]) {
-    if (!request.isPending) continue;
+    if (request.isAnswered) continue;
     RequestResult? result;
     try {
       result = await readResult(client, request.id);
@@ -97,7 +98,8 @@ Future<bool> collectAnswers(RemoteStore client, LocalCache cache) async {
         await notifyRestDayResult(settled);
       }
       changed = true;
-    } else if (DateTime.now().difference(request.createdAt) > kAnswerTimeout) {
+    } else if (request.isPending &&
+        DateTime.now().difference(request.createdAt) > kAnswerTimeout) {
       cache.replaceRequest(request.settle(timedOut: true));
       changed = true;
     }

@@ -1,5 +1,6 @@
 /// "Refresh now" and "Declare rest day", with each request's state:
-/// waiting, the PC's answer, or "PC didn't answer" after 3 minutes.
+/// waiting, the PC's answer, or "no answer yet" after 3 minutes -- which an
+/// answer arriving later still replaces.
 library;
 
 import 'package:daily_limits/services/limits_controller.dart';
@@ -87,7 +88,10 @@ class _RequestLine extends StatelessWidget {
         : 'Refresh';
     final result = request.result;
     final (text, color) = switch ((result, request.timedOut)) {
-      (null, true) => ("$what: PC didn't answer", colors.warning),
+      (null, true) => (
+        '$what: no answer yet (PC may be off); it will show here when it does',
+        colors.warning,
+      ),
       (null, false) => ('$what: waiting for the PC…', null),
       (final r?, _) when r.ok => (
         '$what: ${_or(r.message, 'done')}',

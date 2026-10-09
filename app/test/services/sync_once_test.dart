@@ -116,6 +116,47 @@ void main() {
       expect(cache.requests[2].isPending, isTrue);
     });
 
+    test('collects a late answer to a timed-out request', () async {
+      final late = pending(
+        'late',
+        kind: RequestKind.restDay,
+        age: const Duration(minutes: 9),
+      ).settle(timedOut: true);
+      final cache = LocalCache(requests: [late]);
+      final store = FakeStore({
+        resultPath('late'): jsonEncode({'ok': true, 'message': 'declared'}),
+      });
+      expect(await collectAnswers(store, cache), isTrue);
+      final settled = cache.requests.single;
+      expect(settled.isAnswered, isTrue);
+      expect(settled.result!.message, 'declared');
+      expect(log.titles('show'), ['Rest day declared: 2026-10-10']);
+    });
+
+    test('a timed-out request with no answer stays as it is', () async {
+      final cache = LocalCache(
+        requests: [
+          pending('t', age: const Duration(minutes: 9)).settle(timedOut: true),
+        ],
+      );
+      expect(await collectAnswers(FakeStore(), cache), isFalse);
+      expect(cache.requests.single.timedOut, isTrue);
+    });
+
+    test('an answered request is not read again', () async {
+      final cache = LocalCache(
+        requests: [
+          pending('a')
+              .settle(result: const RequestResult(ok: true, message: '')),
+        ],
+      );
+      final store = FakeStore({
+        resultPath('a'): jsonEncode({'ok': false, 'message': 'other'}),
+      });
+      expect(await collectAnswers(store, cache), isFalse);
+      expect(cache.requests.single.result!.ok, isTrue);
+    });
+
     test('reports no change when nothing moved', () async {
       final cache = LocalCache(requests: [pending('young')]);
       expect(await collectAnswers(FakeStore(), cache), isFalse);
