@@ -128,7 +128,15 @@ def test_before_six_the_gaming_block_is_yesterdays(
     report = _report.build(at("2026-10-09T03:00"))
     assert asked == [today, yesterday]
     assert report["date"] == "2026-10-09"
-    yesterday_all_done = earned_time.resolve(dict.fromkeys(NAMES, 1), day=yesterday)
+    # The hermetic ledgers are empty: no gate has paid out, so first_credits
+    # holds None for each one (only a confirmed gate stays penalised).
+    yesterday_all_done = earned_time.resolve(
+        dict.fromkeys(NAMES, 1),
+        day=yesterday,
+        first_credits=dict.fromkeys(
+            [item.name for item in _compat.earners(yesterday)], None
+        ),
+    )
     assert report["gaming"]["day"] == "2026-10-08"
     assert report["gaming"]["budget_minutes"] == yesterday_all_done.gaming_minutes
     assert report["gaming"]["used_minutes"] == 120

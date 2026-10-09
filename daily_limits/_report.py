@@ -16,6 +16,8 @@ import earned_time
 from daily_limits import _answers, _compat, _paths, _sources
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from earned_time import Earner, Resolution
 
 Status = Literal["done", "todo", "unknown"]
@@ -112,19 +114,27 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
     return rows
 
 
+def _resolve(day: date, moment: datetime) -> Resolution:
+    """Resolve ``day`` as seen at ``moment``, its penalties delayed by maturity.
+
+    Only today and the current gaming day are ever resolved here.
+    """
+    answers = _answers.answers_for(day, moment)
+    first_paid = _answers.first_credits(day)
+    if first_paid is None:
+        return earned_time.resolve(answers, day=day)
+    return earned_time.resolve(answers, day=day, first_credits=first_paid)
+
+
 def build(now: datetime | None = None) -> Report:
     """Resolve today (and the gaming day) into the contract; reads only."""
     moment = (now or datetime.now(tz=UTC)).astimezone()
     day = moment.date()
-    resolution = earned_time.resolve(_answers.answers_for(day, moment), day=day)
+    resolution = _resolve(day, moment)
     # Before 06:00 the enforcer still bills yesterday: resolve that day's budget
     # so it and ``used_minutes`` describe the same gaming day.
     game_day = _answers.gaming_day(moment)
-    gaming = (
-        resolution
-        if game_day == day
-        else earned_time.resolve(_answers.answers_for(game_day, moment), day=game_day)
-    )
+    gaming = resolution if game_day == day else _resolve(game_day, moment)
     applied = _sources.applied_shutdown(_paths.SCHEDULE_FILE, day)
     return {
         "date": day.isoformat(),
