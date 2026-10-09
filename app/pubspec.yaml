@@ -1,0 +1,69 @@
+name: daily_limits
+description: "Daily limits: today's shutdown time and gaming budget, read from the PC over Firebase."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  # RemoteStore / FirebaseRestClient: the read/write calls on the shared
+  # database. Listed explicitly even though crdt_sync_flutter depends on it,
+  # because this app imports it directly.
+  crdt_sync:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: crdt_sync_dart-v0.11.1
+      path: crdt_sync_dart
+  # Keystore-backed Firebase session, account store and per-install device id.
+  crdt_sync_flutter:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: crdt_sync_flutter-v0.3.2
+      path: crdt_sync_flutter
+  # The shared palette, scales and theme. No local theme file to drift.
+  design_system:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: design_system-v0.2.1
+      path: design_system
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: 22.3.1
+  home_widget: 0.10.0
+  # The status cache lives in a JSON file under the app-support directory,
+  # shared between the UI isolate and the workmanager isolate. Not
+  # shared_preferences: crdt_sync_flutter exact-pins an older release.
+  path_provider: 2.1.6
+  # The shared "Sync settings" screen (Firebase sign-in).
+  sync_settings_ui:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: sync_settings_ui-v0.4.1
+      path: sync_settings_ui
+  timezone: 0.11.1
+  uuid: 4.6.0
+  workmanager: 0.10.10
+
+dev_dependencies:
+  # Generates the Android launcher icons from assets/icon/ (see
+  # python_pkg/app_icons in testsAndMisc, key daily_limits).
+  flutter_launcher_icons: 0.14.4
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0
+
+flutter:
+  uses-material-design: true
+
+# The shared icon family (python_pkg/app_icons in testsAndMisc, key
+# daily_limits): #211D1B charcoal field, hourglass glyph in the shared
+# accent #B8862E.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#211D1B"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"
+  min_sdk_android: 24

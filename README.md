@@ -86,3 +86,6 @@ then deleted. Older than 10 min: `ok=false, "expired"`. `refresh` republishes.
 `rest_day` runs `/usr/bin/python3 -m screen_locker.screen_lock
 --declare-rest-day <date>` (screen-locker applies every rule) and republishes.
 A Firebase failure is one warning; the cache is written before any network call.
+
+The phone side (status, widget, notifications, the two requests) is the
+Flutter app in `app/`; see [`app/README.md`](app/README.md).
