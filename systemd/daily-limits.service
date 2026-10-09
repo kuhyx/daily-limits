@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh today's limits cache ($XDG_RUNTIME_DIR/daily-limits.json)
+
+[Service]
+Type=oneshot
+# Read-only apart from the cache file; the i3blocks block reads that file.
+ExecStart=%h/.local/bin/daily-limits --write-cache
+Nice=10

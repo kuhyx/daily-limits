@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh today's limits cache every minute
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=daily-limits.service
+
+[Install]
+WantedBy=timers.target

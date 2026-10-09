@@ -1,0 +1,98 @@
+[project]
+name = "daily-limits"
+version = "0.1.0"
+description = "Today's shutdown time and gaming limit, and what is left to extend them"
+requires-python = ">=3.14"
+# earned_time: the one registry of what every gate earns (the only dependency;
+# everything else is stdlib, tkinter included).
+dependencies = [
+    "earned-time @ git+https://github.com/kuhyx/utils@earned-time-v0.4.0#subdirectory=earned_time",
+]
+
+[project.scripts]
+daily-limits = "daily_limits._cli:main"
+
+[project.optional-dependencies]
+# The test + lint toolchain the pre-commit gate runs from .venv.
+dev = ["mypy==2.4.0", "pylint==4.1.2", "pytest==9.1.1", "pytest-cov==7.1.0"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["daily_limits*"]
+
+[tool.ruff]
+target-version = "py314"
+include = ["*.py", "**/*.py"]
+exclude = [".git", ".venv", "__pycache__", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D203", "D213", "COM812", "ISC001", "S603"]
+
+# The same test-only relaxations every sibling guard repo uses (copied from
+# leetcode-guard, via book-guard): asserts, fixtures without annotations, private access.
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = [
+    "ANN", "ARG", "D", "DTZ011", "E501", "FBT",
+    "PLC0415", "PLR0913", "PLR2004", "PTH", "RUF003", "S101", "S104", "S105",
+    "SLF001",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["daily_limits"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+ignore_missing_imports = true
+show_error_codes = true
+exclude = [".venv/"]
+
+[tool.pylint.main]
+py-version = "3.14"
+jobs = 0
+ignore = [".venv", "__pycache__"]
+ignore-paths = ["^(.*/)?tests/.*$"]
+
+[tool.pylint.messages_control]
+enable = "all"
+disable = [
+    "use-implicit-booleaness-not-comparison",
+    "use-implicit-booleaness-not-comparison-to-string",
+    "use-implicit-booleaness-not-comparison-to-zero",
+]
+
+[tool.pylint.design]
+min-public-methods = 0
+max-attributes = 10
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+
+[tool.pytest.ini_options]
+testpaths = ["daily_limits/tests"]
+addopts = [
+    "-q",
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+    "--cov=daily_limits",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+filterwarnings = ["error::ResourceWarning", "error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+omit = ["daily_limits/tests/*"]
