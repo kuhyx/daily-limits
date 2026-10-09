@@ -1,0 +1,44 @@
+name: app
+
+# The Flutter client (Android-only, so no web build): analyzer with fatal
+# infos plus the format check, then the tests with the 100% line-coverage gate
+# the shared utils repo enforces everywhere. Two parallel jobs rather than one
+# serial one, to stay inside the one-minute budget.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [analyze, test]
+    name: flutter (${{ matrix.task }})
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the shared gates
+        uses: actions/checkout@v4
+        with:
+          repository: kuhyx/utils
+          path: .utils
+      - uses: kuhyx/utils/flutter-setup@flutter-setup-v1
+        with:
+          # Keep in sync with app/.fvmrc.
+          flutter-version: 3.47.7
+          working-directory: app
+      - run: flutter pub get
+      - if: matrix.task == 'analyze'
+        run: |
+          flutter analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed lib test
+      - if: matrix.task == 'test'
+        run: |
+          flutter test --coverage
+          bash ../.utils/scripts/check_coverage.sh coverage/lcov.info 100

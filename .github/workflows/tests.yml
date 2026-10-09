@@ -57,4 +57,5 @@ jobs:
         name: pre-commit (Python hooks)
         run: |
           .venv/bin/python -m pip install --quiet pre-commit
-          SKIP=dependency-freshness .venv/bin/pre-commit run --all-files
+          # app.yml runs the Flutter app hooks (they need the Flutter SDK).
+          SKIP=app-analyze,app-format,app-test,dependency-freshness .venv/bin/pre-commit run --all-files
