@@ -42,6 +42,10 @@ Fixed: the i3blocks block parses it.
   `shutdown_minutes_for` / `shutdown_ceiling_for` when the installed
   earned_time has them (the 2026-10-10 ladder), else the 0.3.0 fields
   (`_compat.py`).
+- Per-earner `shutdown_minutes` / `gaming_minutes` are what is **still
+  earnable today**: the full value minus what the day's credited units
+  already earned (the tutor: 60 minus credited minutes), never negative; 0
+  once `done`.
 - `shutdown.applied` is what screen-locker actually wrote to
   `/etc/shutdown-schedule.conf` (today's weekday `*_MINUTES` key). It can
   differ from `resolved` (sick day, a pending live pass); `null` if unreadable.

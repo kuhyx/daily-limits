@@ -109,15 +109,19 @@ class Popup:
         card.pack(fill="x", pady=(tok.MD, 0))
         for row, earner in enumerate(report["earners"]):
             colour = _STATUS_COLOUR[earner["status"]]
+            # A done earner has nothing left to earn: no "+0m", like the bar.
+            done = earner["status"] == "done"
             cells: tuple[tuple[str, str, tok.TypeRole], ...] = (
                 (earner["label"], tok.TEXT_ON_DARK, "body"),
                 (
-                    f"+{_render.duration(earner['shutdown_minutes'])}",
+                    "" if done else f"+{_render.duration(earner['shutdown_minutes'])}",
                     tok.MUTED_ON_DARK,
                     "label",
                 ),
                 (
-                    f"+{_render.duration(earner['gaming_minutes'])} game",
+                    ""
+                    if done
+                    else f"+{_render.duration(earner['gaming_minutes'])} game",
                     tok.MUTED_ON_DARK,
                     "label",
                 ),

@@ -95,7 +95,7 @@ def test_nothing_done_lists_every_earner_cumulatively(
         "label": REGISTRY[-1].label,
         "status": "todo",
         "shutdown_minutes": _compat.shutdown_left(REGISTRY[-1], 0, day),
-        "gaming_minutes": _compat.gaming_most(REGISTRY[-1]),
+        "gaming_minutes": _compat.gaming_left(REGISTRY[-1], 0),
     }
 
 

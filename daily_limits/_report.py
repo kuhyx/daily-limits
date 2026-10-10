@@ -158,9 +158,12 @@ def build(now: datetime | None = None) -> Report:
                 "name": term.earner.name,
                 "label": term.earner.label,
                 "status": _status(term.earner, term.answer),
-                # A full day's worth, like gaming: the tutor's 4 blocks, not 1.
-                "shutdown_minutes": _compat.shutdown_left(term.earner, 0, day),
-                "gaming_minutes": _compat.gaming_most(term.earner),
+                # What is still earnable today: full value minus what the
+                # credited units already paid (the tutor's 60 - credited).
+                "shutdown_minutes": _compat.shutdown_left(
+                    term.earner, term.answer, day
+                ),
+                "gaming_minutes": _compat.gaming_left(term.earner, term.answer),
             }
             for term in resolution.terms
         ],

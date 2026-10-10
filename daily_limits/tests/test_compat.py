@@ -99,11 +99,13 @@ class _Capped:
 
     max_units = 4
     gaming_minutes = 15
-    max_gaming_minutes = 60
 
     def shutdown_for(self, units: int, day: date) -> int:
         del day
         return 13 * min(units, self.max_units)
+
+    def gaming_for(self, units: int) -> int:
+        return 15 * min(units, self.max_units)
 
 
 def test_units_left_for_a_flat_and_a_capped_earner() -> None:
@@ -112,13 +114,18 @@ def test_units_left_for_a_flat_and_a_capped_earner() -> None:
     assert [_compat.units_left(capped, a) for a in (None, 1, 4, 5)] == [4, 3, 0, 0]
 
 
-def test_shutdown_left_and_gaming_most() -> None:
+def test_shutdown_left_and_gaming_left() -> None:
     capped = _Capped()
     assert _compat.shutdown_left(capped, 1, DAY) == 39
     assert _compat.shutdown_left(capped, None, DAY) == 52
+    assert _compat.shutdown_left(capped, 5, DAY) == 0
     assert _compat.shutdown_left(ITEM, 0, DAY) == _compat.shutdown_minutes(ITEM, DAY)
-    assert _compat.gaming_most(capped) == 60
-    assert _compat.gaming_most(ITEM) == 7
+    assert _compat.shutdown_left(ITEM, 1, DAY) == 0
+    assert _compat.gaming_left(capped, 1) == 45
+    assert _compat.gaming_left(capped, None) == 60
+    assert _compat.gaming_left(capped, 5) == 0
+    assert _compat.gaming_left(ITEM, None) == 7
+    assert _compat.gaming_left(ITEM, 1) == 0
 
 
 def test_earners_falls_back_to_the_static_registry(

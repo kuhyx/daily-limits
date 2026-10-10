@@ -25,6 +25,9 @@ def test_summary_with_every_status() -> None:
     assert "Gaming     3h budget, 1h34 used   [ceiling 8h]" in text
     assert "gaming day" not in text
     assert "[x] E0" in text
+    # A done row has nothing left to earn: no amounts, status still aligned.
+    assert "  [x] E0" + " " * 43 + "done\n" in text
+    assert "  [ ] E1          +   1h shutdown  +  25m gaming   not yet\n" in text
     assert "[ ] E1" in text
     assert "[?] E2" in text
     assert "could not check" in text

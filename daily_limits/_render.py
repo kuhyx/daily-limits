@@ -55,11 +55,14 @@ def summary(report: Report) -> str:
     lines.append("Earners")
     for row in report["earners"]:
         mark = _MARK[row["status"]]
-        shutdown = duration(row["shutdown_minutes"])
-        gaming = duration(row["gaming_minutes"])
+        # A done earner has nothing left to earn: show no "+0m", like the bar.
+        amounts = " " * 30
+        if row["status"] != "done":
+            shutdown = duration(row["shutdown_minutes"])
+            gaming = duration(row["gaming_minutes"])
+            amounts = f"+{shutdown:>5} shutdown  +{gaming:>5} gaming"
         lines.append(
-            f"  {mark} {row['label']:<11} +{shutdown:>5} shutdown"
-            f"  +{gaming:>5} gaming   {_STATUS_WORD[row['status']]}"
+            f"  {mark} {row['label']:<11} {amounts}   {_STATUS_WORD[row['status']]}"
         )
     if report["todo"]:
         lines.append("")

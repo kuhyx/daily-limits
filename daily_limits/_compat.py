@@ -73,7 +73,7 @@ def earners(day: date) -> tuple[Earner, ...]:
 def units_left(item: Earner, answer: int | None) -> int:
     """Units ``item`` can still pay: 1 until done, a capped gate's remainder.
 
-    A capped counted gate is the tutor (4 blocks a day).
+    A capped counted gate is the tutor (``max_units`` credited minutes a day).
     """
     done = answer or 0
     most: int | None = getattr(item, "max_units", None)
@@ -83,13 +83,26 @@ def units_left(item: Earner, answer: int | None) -> int:
 
 
 def shutdown_left(item: Earner, answer: int | None, day: date) -> int:
-    """Shutdown minutes ``item``'s remaining units would still add on ``day``."""
+    """Shutdown minutes ``item`` can still add on ``day``; never negative.
+
+    Full value minus what ``answer`` units already earned. An uncapped earner
+    pays its first unit only (``units_left``); ``None`` (unknown) counts as 0.
+    """
     most: int | None = getattr(item, "max_units", None)
     if most is None:
-        return shutdown_minutes(item, day)
-    return int(item.shutdown_for(most, day) - item.shutdown_for(answer or 0, day))
+        return 0 if answer else shutdown_minutes(item, day)
+    return max(
+        0, int(item.shutdown_for(most, day) - item.shutdown_for(answer or 0, day))
+    )
 
 
-def gaming_most(item: Earner) -> int:
-    """Gaming minutes a fully done day pays (the tutor's 4 blocks, not one)."""
-    return int(getattr(item, "max_gaming_minutes", item.gaming_minutes))
+def gaming_left(item: Earner, answer: int | None) -> int:
+    """Gaming minutes ``item`` can still earn today; never negative.
+
+    ``gaming_for(max_units) - gaming_for(answer)``; an uncapped earner pays its
+    first unit only, like :func:`shutdown_left`.
+    """
+    most: int | None = getattr(item, "max_units", None)
+    if most is None:
+        return 0 if answer else int(item.gaming_minutes)
+    return max(0, int(item.gaming_for(most) - item.gaming_for(answer or 0)))

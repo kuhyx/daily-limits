@@ -117,6 +117,9 @@ def test_popup_draws_the_report(
     assert "Gaming 3h · 1h34 used" in labels
     assert labels["ceiling 8h"] == tok.MUTED_ON_DARK
     assert labels["done"] == tok.SUCCESS
+    # Only the todo and unknown rows show amounts; the done row's are blank.
+    assert [text for text, _fg in texts].count("+1h") == 2
+    assert ("", tok.MUTED_ON_DARK) in texts
     assert labels["to do"] == tok.WARNING
     assert labels["could not check"] == tok.MUTED_ON_DARK
     assert labels["E1  →  shutdown 21:00"] == tok.TEXT_ON_DARK

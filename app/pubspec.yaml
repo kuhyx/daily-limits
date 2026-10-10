@@ -19,7 +19,7 @@ dependencies:
   crdt_sync_flutter:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_flutter-v0.3.2
+      ref: crdt_sync_flutter-v0.3.3
       path: crdt_sync_flutter
   # The shared palette, scales and theme. No local theme file to drift.
   design_system:
