@@ -7,8 +7,8 @@ requires-python = ">=3.14"
 # Firebase RTDB client --sync publishes through (same tag pin as home-guard).
 # Everything else is stdlib, tkinter included.
 dependencies = [
-    "earned-time @ git+https://github.com/kuhyx/utils@earned-time-v0.6.0#subdirectory=earned_time",
-    "crdt-sync @ git+https://github.com/kuhyx/utils@crdt-sync-v0.9.1#subdirectory=crdt-sync",
+    "earned-time @ git+https://github.com/kuhyx/utils@earned-time-v0.6.1#subdirectory=earned_time",
+    "crdt-sync @ git+https://github.com/kuhyx/utils@crdt-sync-v0.9.2#subdirectory=crdt-sync",
 ]
 
 [project.scripts]
@@ -32,7 +32,10 @@ exclude = [".git", ".venv", "__pycache__", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D203", "D213", "COM812", "ISC001", "S603"]
+ignore = [
+    "D203", "D213", "COM812", "ISC001", "S603",
+    "CPY001",  # personal repo, no copyright policy (ruff 0.17 made CPY001 stable under select=ALL)
+]
 
 # The same test-only relaxations every sibling guard repo uses (copied from
 # leetcode-guard, via book-guard): asserts, fixtures without annotations, private access.
