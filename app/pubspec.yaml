@@ -29,7 +29,7 @@ dependencies:
       path: design_system
   flutter:
     sdk: flutter
-  flutter_local_notifications: 22.3.1
+  flutter_local_notifications: 22.3.2
   home_widget: 0.10.0
   # The status cache lives in a JSON file under the app-support directory,
   # shared between the UI isolate and the workmanager isolate. Not
@@ -41,7 +41,7 @@ dependencies:
       url: https://github.com/kuhyx/utils
       ref: sync_settings_ui-v0.4.1
       path: sync_settings_ui
-  timezone: 0.11.1
+  timezone: 0.11.2
   uuid: 4.6.0
   workmanager: 0.10.10
 
