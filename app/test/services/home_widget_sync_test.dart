@@ -48,6 +48,7 @@ void main() {
 
   test('earnerIcon falls back to a bullet', () {
     expect(earnerIcon('reading'), '📖');
+    expect(earnerIcon('tutor'), '⚙');
     expect(earnerIcon('unknown-earner'), '•');
   });
 

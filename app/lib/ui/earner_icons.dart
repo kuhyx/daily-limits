@@ -7,6 +7,7 @@ const Map<String, String> _icons = {
   'reading': '📖',
   'anki': '🗂',
   'automation': '⚙',
+  'tutor': '⚙',
 };
 
 /// The icon for earner [name], or a bullet for one the phone does not know.

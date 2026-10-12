@@ -22,7 +22,8 @@ class EarnerState {
     required this.gamingMinutes,
   });
 
-  /// Registry key: `workout`, `leetcode`, `reading`, `anki`, `automation`.
+  /// Registry key: `workout`, `leetcode`, `reading`, `anki`, `automation`,
+  /// `tutor`.
   final String name;
 
   /// Human label from the registry.

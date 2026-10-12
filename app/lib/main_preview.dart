@@ -39,7 +39,7 @@ String _fixture(DateTime published, String gamingDay) => jsonEncode({
       ('leetcode', 'LeetCode', 'todo'),
       ('reading', 'Reading', 'done'),
       ('anki', 'Anki', 'unknown'),
-      ('automation', 'Automation', 'done'),
+      ('tutor', 'Tutor', 'done'),
     ])
       {
         'name': name,
