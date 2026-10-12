@@ -44,8 +44,8 @@ Fixed: the i3blocks block parses it.
   (`_compat.py`).
 - Per-earner `shutdown_minutes` / `gaming_minutes` are what is **still
   earnable today**: the full value minus what the day's credited units
-  already earned (the tutor: 60 minus credited minutes), never negative; 0
-  once `done`.
+  already earned (the tutor: 60 units minus those credited so far), never
+  negative; 0 once `done`.
 - `shutdown.applied` is what screen-locker actually wrote to
   `/etc/shutdown-schedule.conf` (today's weekday `*_MINUTES` key). It can
   differ from `resolved` (sick day, a pending live pass); `null` if unreadable.

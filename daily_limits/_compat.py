@@ -73,7 +73,8 @@ def earners(day: date) -> tuple[Earner, ...]:
 def units_left(item: Earner, answer: int | None) -> int:
     """Units ``item`` can still pay: 1 until done, a capped gate's remainder.
 
-    A capped counted gate is the tutor (``max_units`` credited minutes a day).
+    A capped counted gate is the tutor (``max_units`` credited units a day: 60
+    units, paid at the day's quota of 15/30/50 minutes).
     """
     done = answer or 0
     most: int | None = getattr(item, "max_units", None)

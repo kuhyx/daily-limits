@@ -159,7 +159,8 @@ def build(now: datetime | None = None) -> Report:
                 "label": term.earner.label,
                 "status": _status(term.earner, term.answer),
                 # What is still earnable today: full value minus what the
-                # credited units already paid (the tutor's 60 - credited).
+                # credited units already paid (the tutor pays 60 units,
+                # minus those credited).
                 "shutdown_minutes": _compat.shutdown_left(
                     term.earner, term.answer, day
                 ),
