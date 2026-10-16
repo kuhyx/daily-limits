@@ -71,7 +71,7 @@ class Popup:
     def _draw(self, report: Report) -> None:
         shut, game = report["shutdown"], report["gaming"]
         self._label(
-            self._body, f"Today {report['date']}", "label", fg=tok.MUTED_ON_DARK
+            self._body, _render.heading(report), "label", fg=tok.MUTED_ON_DARK
         ).pack(anchor="w")
         self._label(
             self._body,

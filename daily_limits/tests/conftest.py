@@ -6,6 +6,8 @@ Autouse, so no test can forget them:
 * every path (ledgers under HOME, the HMAC key, the shutdown schedule, the
   enforcer's playtime state) points into ``tmp_path`` -- the real files are
   never read;
+* the sick-day pool is an empty file under ``tmp_path`` (``sick_pool`` marks
+  days in it) -- ``~/.local/share/sickdays`` is never read;
 * ``$XDG_RUNTIME_DIR`` is a temp dir, so ``--write-cache`` never touches
   /run/user;
 * ``--sync``'s state lives in ``tmp_path``, screen-locker's interpreter is a
@@ -20,10 +22,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+import sickdays
+from sickdays import _paths as sick_paths
 
 from daily_limits import _paths, _sync_client
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from datetime import date
     from pathlib import Path
 
 TEST_KEY = b"test-hmac-key"
@@ -61,4 +67,16 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(_sync_client, "firebase_client_for", _no_firebase)
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr("tkinter.Tk", _no_tk)
+    monkeypatch.setattr(sick_paths, "LOG_PATH", sick_paths.Paths.under(tmp_path).log)
     return tmp_path
+
+
+@pytest.fixture
+def sick_pool(hermetic: Path) -> Callable[[date], None]:
+    """Mark a day sick in the (temp) pool, through the real ``sickdays`` writer."""
+    paths = sick_paths.Paths.under(hermetic)
+
+    def mark(day: date) -> None:
+        sickdays.add_sick_day(day, is_free=lambda _day: False, paths=paths, now=day)
+
+    return mark

@@ -57,3 +57,10 @@ def test_summary_names_a_different_gaming_day() -> None:
     report = _samples.report(gaming_day="2026-10-08")
     assert _render.gaming_day_note(report) == " (gaming day 2026-10-08)"
     assert "[ceiling 8h] (gaming day 2026-10-08)" in _render.summary(report)
+
+
+def test_heading_marks_a_sick_day() -> None:
+    assert _render.heading(_samples.report()) == "Today 2026-10-09"
+    sick = _samples.report(sick=True)
+    assert _render.heading(sick) == "Today 2026-10-09 (sick day)"
+    assert _render.summary(sick).startswith("Today 2026-10-09 (sick day)\n")

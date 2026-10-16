@@ -28,7 +28,7 @@ first is read by the i3blocks block). `install.sh --dry-run` prints every step i
 Fixed: the i3blocks block parses it.
 
 ```json
-{"date": "YYYY-MM-DD", "generated_at": 1791532875,
+{"date": "YYYY-MM-DD", "generated_at": 1791532875, "sick": false,
  "shutdown": {"applied": "HH:MM|null", "resolved": "HH:MM", "floor": "HH:MM", "ceiling": "HH:MM"},
  "gaming": {"day": "YYYY-MM-DD", "budget_minutes": 180, "used_minutes": 94, "ceiling_minutes": 480},
  "earners": [{"name": "workout", "label": "workout", "status": "done|todo|unknown",
@@ -42,13 +42,18 @@ Fixed: the i3blocks block parses it.
   `shutdown_minutes_for` / `shutdown_ceiling_for` when the installed
   earned_time has them (the 2026-10-10 ladder), else the 0.3.0 fields
   (`_compat.py`).
+- `sick` is whether the calendar `date` is in the `sickdays` pool (an
+  unreadable pool reads `false`: fail closed). On a sick day `shutdown.resolved`
+  is `max(20:00, normal result)` capped at the ceiling and every `todo` step
+  gets the same floor; `floor` stays the unlifted base. Gaming and the earners
+  are unchanged. The popup and the text summary mark it `(sick day)`.
 - Per-earner `shutdown_minutes` / `gaming_minutes` are what is **still
   earnable today**: the full value minus what the day's credited units
   already earned (the tutor: 60 units minus those credited so far), never
   negative; 0 once `done`.
 - `shutdown.applied` is what screen-locker actually wrote to
   `/etc/shutdown-schedule.conf` (today's weekday `*_MINUTES` key). It can
-  differ from `resolved` (sick day, a pending live pass); `null` if unreadable.
+  differ from `resolved` (a sick day, a pending live pass); `null` if unreadable.
 - `gaming` describes the enforcer's **gaming day** (06:00 to 06:00), named in
   `gaming.day`. Before 06:00 that is yesterday, so the budget is resolved for
   that day and matches `used_minutes`. Shutdown stays on the calendar `date`.

@@ -3,7 +3,7 @@
 # install.sh -- install daily-limits and its every-minute cache timer.
 #
 # Installs into the SYSTEM python's user site-packages (not a venv), because
-# that is what the systemd user unit runs; earned-time and crdt-sync come in
+# that is what the systemd user unit runs; earned-time, sickdays and crdt-sync come in
 # through the pinned git URLs in pyproject.toml (the pins the other consumers
 # use). Then verifies the imports with that exact interpreter and enables the
 # timer.
@@ -46,10 +46,11 @@ install_package() {
     # it is already there, keep it: the URL pin would otherwise reinstall --
     # and, once the consumers are re-pinned to a newer tag, DOWNGRADE -- it.
     # crdt_sync is shared the same way (every Firebase app), so the same rule
-    # covers both: --no-deps only when neither would be installed by the pins.
+    # covers all three (sickdays too): --no-deps only when none would be
+    # installed by the pins.
     local deps=()
-    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync' 2>/dev/null; then
-        log "earned_time and crdt_sync already installed; keeping them (--no-deps)"
+    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync, sickdays' 2>/dev/null; then
+        log "earned_time, crdt_sync and sickdays already installed; keeping them (--no-deps)"
         deps=(--no-deps)
     fi
     run "$SYSTEM_PYTHON" -m pip install --user --break-system-packages -q \
@@ -58,7 +59,7 @@ install_package() {
 
 verify_runtime() {
     log "verifying imports and the entry point"
-    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, earned_time, crdt_sync, tkinter" ||
+    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, earned_time, crdt_sync, sickdays, tkinter" ||
         fail "a runtime dependency is missing from the system python"
     if ((!DRY_RUN)); then
         [[ -x "$BIN" ]] || fail "no entry point at $BIN"

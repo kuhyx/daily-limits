@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final, Literal, TypedDict
 
 import earned_time
+import sickdays
 
 from daily_limits import _answers, _compat, _paths, _sources
 
@@ -73,6 +74,7 @@ class Report(TypedDict):
 
     date: str
     generated_at: int
+    sick: bool
     shutdown: Shutdown
     gaming: Gaming
     earners: list[EarnerRow]
@@ -92,9 +94,14 @@ def _status(item: Earner, answer: int | None) -> Status:
 
 
 def _todo(resolution: Resolution) -> list[TodoRow]:
-    """Not-done earners in registry order, each with the cumulative shutdown."""
+    """Not-done earners in registry order, each with the cumulative shutdown.
+
+    The walk starts from the *earned* shutdown (the sick floor's lift removed)
+    and re-applies the floor at every step, so on a sick day each step is
+    ``max(20:00, ladder)`` -- a lift is never double-counted nor stacked.
+    """
     rows: list[TodoRow] = []
-    shutdown = resolution.shutdown_minutes
+    shutdown = resolution.shutdown_minutes - resolution.sick_lift_minutes
     for term in resolution.terms:
         item: Earner = term.earner
         if term.answer is not None and not _compat.units_left(item, term.answer):
@@ -108,7 +115,11 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
                 "name": item.name,
                 "label": item.label,
                 "status": "unknown" if term.answer is None else "todo",
-                "shutdown_after": hhmm(shutdown),
+                "shutdown_after": hhmm(
+                    earned_time.sick_shutdown_minutes(shutdown, resolution.day)
+                    if resolution.sick
+                    else shutdown
+                ),
             }
         )
     return rows
@@ -117,13 +128,16 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
 def _resolve(day: date, moment: datetime) -> Resolution:
     """Resolve ``day`` as seen at ``moment``, its penalties delayed by maturity.
 
-    Only today and the current gaming day are ever resolved here.
+    Only today and the current gaming day are ever resolved here. Whether
+    ``day`` is sick is asked of the pool for that same ``day`` (never today's
+    answer for the gaming day), and an unreadable pool reads as not sick.
     """
     answers = _answers.answers_for(day, moment)
     first_paid = _answers.first_credits(day)
+    sick = sickdays.is_sick_day(day)
     if first_paid is None:
-        return earned_time.resolve(answers, day=day)
-    return earned_time.resolve(answers, day=day, first_credits=first_paid)
+        return earned_time.resolve(answers, day=day, sick=sick)
+    return earned_time.resolve(answers, day=day, first_credits=first_paid, sick=sick)
 
 
 def build(now: datetime | None = None) -> Report:
@@ -139,6 +153,7 @@ def build(now: datetime | None = None) -> Report:
     return {
         "date": day.isoformat(),
         "generated_at": int(moment.timestamp()),
+        "sick": resolution.sick,
         "shutdown": {
             "applied": None if applied is None else hhmm(applied),
             "resolved": hhmm(resolution.shutdown_minutes),

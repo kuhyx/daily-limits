@@ -48,9 +48,14 @@ def gaming_day_note(report: Report) -> str:
     return "" if day == report["date"] else f" (gaming day {day})"
 
 
+def heading(report: Report) -> str:
+    """``Today YYYY-MM-DD``, plus `` (sick day)`` when shutdown is lifted."""
+    return f"Today {report['date']}" + (" (sick day)" if report["sick"] else "")
+
+
 def summary(report: Report) -> str:
     """The multi-line text the bare ``daily-limits`` command prints."""
-    lines = [f"Today {report['date']}", _shutdown_line(report), _gaming_line(report)]
+    lines = [heading(report), _shutdown_line(report), _gaming_line(report)]
     lines.append("")
     lines.append("Earners")
     for row in report["earners"]:

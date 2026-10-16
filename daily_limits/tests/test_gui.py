@@ -126,6 +126,14 @@ def test_popup_draws_the_report(
     assert labels["E2  →  shutdown 22:00  (could not check)"] == tok.MUTED_ON_DARK
 
 
+def test_popup_marks_a_sick_day(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    _root, texts = _popup(monkeypatch, _samples.report(sick=True))
+    assert "Today 2026-10-09 (sick day)" in dict(texts)
+
+
 def test_popup_without_schedule_playtime_or_todo(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:

@@ -17,6 +17,7 @@ def at(iso: str) -> datetime:
 
 def report(
     *,
+    sick: bool = False,
     applied: str | None = "20:00",
     resolved: str = "18:00",
     used: int | None = 94,
@@ -38,6 +39,7 @@ def report(
     return {
         "date": "2026-10-09",
         "generated_at": 1791532875,
+        "sick": sick,
         "shutdown": {
             "applied": applied,
             "resolved": resolved,

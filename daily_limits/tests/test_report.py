@@ -14,6 +14,8 @@ from daily_limits import _answers, _compat, _paths, _report
 from daily_limits.tests._samples import at
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from daily_limits._answers import Answer
 
 # The registry of the pinned test day; the tutor cutover switches it.
@@ -28,7 +30,15 @@ def _full(item: object) -> int:
     return most or 1
 
 
-CONTRACT_KEYS = {"date", "generated_at", "shutdown", "gaming", "earners", "todo"}
+CONTRACT_KEYS = {
+    "date",
+    "generated_at",
+    "sick",
+    "shutdown",
+    "gaming",
+    "earners",
+    "todo",
+}
 
 
 def _answers_by_day(
@@ -154,3 +164,74 @@ def test_build_defaults_to_now(monkeypatch: pytest.MonkeyPatch) -> None:
     assert report["generated_at"] > 0
     today = date.fromisoformat(report["date"])
     assert len(report["earners"]) == len(_compat.earners(today))
+
+
+def _expected_todo(day: date, start: int, *, sick: bool) -> list[int]:
+    """Cumulative shutdown per earner from the earned ``start`` (nothing done)."""
+    ceiling = _compat.shutdown_ceiling(day)
+    steps: list[int] = []
+    running = start
+    for item in _compat.earners(day):
+        running = min(ceiling, running + _compat.shutdown_left(item, 0, day))
+        steps.append(
+            earned_time.sick_shutdown_minutes(running, day) if sick else running
+        )
+    return steps
+
+
+def test_normal_day_is_not_sick(monkeypatch: pytest.MonkeyPatch) -> None:
+    _answers_by_day(monkeypatch, {DAY: dict.fromkeys(NAMES, 0)})
+    report = _report.build(at("2026-10-09T10:00"))
+    assert report["sick"] is False
+
+
+def test_sick_day_lifts_shutdown_and_every_todo_step(
+    monkeypatch: pytest.MonkeyPatch, sick_pool: Callable[[date], None]
+) -> None:
+    _answers_by_day(monkeypatch, {DAY: dict.fromkeys(NAMES, 0)})
+    sick_pool(DAY)
+    report = _report.build(at("2026-10-09T10:00"))
+    base = earned_time.base_for(DAY).shutdown_minutes
+    assert report["sick"] is True
+    # Nothing done: the base is below the 20:00 floor, so it is lifted to it.
+    assert base < earned_time.SICK_SHUTDOWN_FLOOR_MINUTES
+    assert report["shutdown"]["resolved"] == "20:00"
+    # ``floor`` stays the unlifted base: it is what an unsick day starts from.
+    assert report["shutdown"]["floor"] == _report.hhmm(base)
+    assert [row["shutdown_after"] for row in report["todo"]] == [
+        _report.hhmm(step) for step in _expected_todo(DAY, base, sick=True)
+    ]
+    # Never stacked on the lift: from the 20:00 floor the first step would be
+    # 22:00, but the walk starts from the earned base, so it stays at 21:00.
+    first = _expected_todo(DAY, base, sick=False)[0]
+    assert report["todo"][0]["shutdown_after"] == _report.hhmm(first)
+    assert (
+        first
+        < _expected_todo(DAY, earned_time.SICK_SHUTDOWN_FLOOR_MINUTES, sick=False)[0]
+    )
+
+
+def test_sick_day_does_not_change_gaming(
+    monkeypatch: pytest.MonkeyPatch, sick_pool: Callable[[date], None]
+) -> None:
+    _answers_by_day(monkeypatch, {DAY: dict.fromkeys(NAMES, 0)})
+    plain = _report.build(at("2026-10-09T10:00"))
+    sick_pool(DAY)
+    sick = _report.build(at("2026-10-09T10:00"))
+    assert sick["gaming"] == plain["gaming"]
+    assert sick["earners"] == plain["earners"]
+
+
+def test_before_six_the_resolved_day_is_asked_not_today(
+    monkeypatch: pytest.MonkeyPatch, sick_pool: Callable[[date], None]
+) -> None:
+    today, yesterday = date(2026, 10, 9), date(2026, 10, 8)
+    _answers_by_day(
+        monkeypatch,
+        {today: dict.fromkeys(NAMES, 0), yesterday: dict.fromkeys(NAMES, 0)},
+    )
+    sick_pool(yesterday)
+    # 03:00: shutdown is still today's (not sick); the gaming day is yesterday.
+    report = _report.build(at("2026-10-09T03:00"))
+    assert report["sick"] is False
+    assert report["gaming"]["day"] == "2026-10-08"

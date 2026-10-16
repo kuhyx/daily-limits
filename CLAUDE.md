@@ -18,9 +18,13 @@ Read README.md first, then DOCS-sources.md.
   change the output with no code change here.
 - **`None` is "could not check".** It renders as `unknown` / `[?]`, never as
   "not yet".
+- **Sick days come from `sickdays.is_sick_day(day)`** for the day being
+  resolved (the calendar day for shutdown, the gaming day for the gaming
+  resolve); never today's answer for another day. Tests redirect its pool
+  (`sick_pool` fixture).
 - **The JSON contract is frozen.** The i3blocks block parses it. Add keys only
   with that script.
-- **Stdlib + earned_time + crdt_sync only, and every earner is read generically** from its
+- **Stdlib + earned_time + sickdays + crdt_sync only, and every earner is read generically** from its
   ledger (`_answers.py`). Never read another app's private files (nothing
   under `~/src/screen-locker`). An earner with no ledger is `unknown`.
 - **Gaming is per gaming day** (06:00 boundary, `gaming.day`). Shutdown is per
