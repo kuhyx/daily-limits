@@ -8,7 +8,9 @@ Read README.md first, then DOCS-sources.md.
   budget, and never talk to or restart steam-backlog-enforcer's daemon. Local
   writes: the cache under `$XDG_RUNTIME_DIR` and `--sync`'s state under
   `~/.local/share/daily-limits/`. Remote writes: only `daily_limits/` in
-  Firebase (README "Firebase").
+  Firebase (README "Firebase"). The popup's one button may *launch* the
+  sickdays picker (`_sick_picker.py`: `sickdays gui`, detached, a subprocess,
+  never an import); that program owns its own writes.
 - **A rest day goes through screen-locker's own CLI** (`_rest_day.py`, a
   subprocess), never an import, and only with a strictly validated date.
 - **Firebase never breaks the cache.** The cache is written first; any sync

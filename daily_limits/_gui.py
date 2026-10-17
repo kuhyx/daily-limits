@@ -1,7 +1,8 @@
 # Copyright (c) 2026 Krzysztof Rudnicki
 """A small Tk popup of the same report, drawn with the unified design tokens.
 
-Read-only: it rebuilds the report every minute and never writes anything.
+Read-only: it rebuilds the report every minute and never writes anything. Its
+one button launches ``sickdays gui`` (``_sick_picker``), which owns its writes.
 ``Escape`` or ``q`` closes it. The window class is ``daily-limits`` so an i3
 ``for_window`` rule can float or place it.
 """
@@ -12,7 +13,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Final
 
-from daily_limits import _render, _report
+from daily_limits import _render, _report, _sick_picker
 from daily_limits import _tokens as tok
 
 if TYPE_CHECKING:
@@ -103,6 +104,7 @@ class Popup:
         ).pack(anchor="w")
         self._draw_earners(report)
         self._draw_todo(report)
+        self._draw_sick_days(report)
 
     def _draw_earners(self, report: Report) -> None:
         card = tk.Frame(self._body, bg=tok.INK_RAISED_1, padx=tok.MD, pady=tok.SM)
@@ -150,6 +152,39 @@ class Popup:
                 "body",
                 fg=tok.MUTED_ON_DARK if unknown else tok.TEXT_ON_DARK,
             ).pack(anchor="w")
+
+    def _draw_sick_days(self, report: Report) -> None:
+        row = tk.Frame(self._body, bg=tok.INK)
+        row.pack(fill="x", pady=(tok.LG, 0))
+        notice = self._label(row, "", "caption", fg=tok.WARNING)
+
+        def open_picker() -> None:
+            notice.configure(text=_sick_picker.launch() or "")
+
+        # A ghost button: accent text and a one-pixel accent border on INK.
+        tk.Button(
+            row,
+            text="Sick days…",
+            command=open_picker,
+            fg=tok.ACCENT,
+            bg=tok.INK,
+            activeforeground=tok.ACCENT,
+            activebackground=tok.INK_RAISED_1,
+            highlightbackground=tok.ACCENT,
+            highlightcolor=tok.ACCENT,
+            highlightthickness=1,
+            relief="flat",
+            borderwidth=0,
+            padx=tok.MD,
+            pady=tok.XS,
+            cursor="hand2",
+            font=self._font("label", bold=True),
+        ).pack(side="left")
+        if report["sick"]:
+            self._label(row, "Sick day", "caption", fg=tok.ACCENT).pack(
+                side="left", padx=(tok.MD, 0)
+            )
+        notice.pack(side="left", padx=(tok.MD, 0))
 
 
 def run() -> int:

@@ -13,6 +13,8 @@ Autouse, so no test can forget them:
 * ``--sync``'s state lives in ``tmp_path``, screen-locker's interpreter is a
   path that does not exist, and building a real Firebase client fails: no
   test reaches the network or declares a rest day;
+* the sick-day picker resolves to a name that is on no PATH, so no test
+  starts the real ``sickdays gui``;
 * ``tkinter.Tk`` raises: no test may open a real window (GUI tests install a
   fake tk module instead).
 """
@@ -25,7 +27,7 @@ import pytest
 import sickdays
 from sickdays import _paths as sick_paths
 
-from daily_limits import _paths, _sync_client
+from daily_limits import _paths, _sick_picker, _sync_client
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -65,6 +67,7 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(_paths, "HANDLED_FILE", state / "handled_requests.json")
     monkeypatch.setattr(_paths, "SCREEN_LOCKER_PYTHON", str(tmp_path / "no-python"))
     monkeypatch.setattr(_sync_client, "firebase_client_for", _no_firebase)
+    monkeypatch.setattr(_sick_picker, "EXECUTABLE", "sickdays-absent-in-tests")
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr("tkinter.Tk", _no_tk)
     monkeypatch.setattr(sick_paths, "LOG_PATH", sick_paths.Paths.under(tmp_path).log)

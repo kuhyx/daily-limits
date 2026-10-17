@@ -87,7 +87,9 @@ def roots(monkeypatch: pytest.MonkeyPatch) -> list[FakeWidget]:
         created.append(root)
         return root
 
-    fake_tk = SimpleNamespace(Tk=make_root, Frame=FakeWidget, Label=FakeWidget)
+    fake_tk = SimpleNamespace(
+        Tk=make_root, Frame=FakeWidget, Label=FakeWidget, Button=FakeWidget
+    )
     fake_font = SimpleNamespace(
         nametofont=lambda _name: SimpleNamespace(actual=lambda _key: "Fake Sans")
     )
@@ -182,6 +184,53 @@ def test_run_opens_a_classed_root_and_loops(
     assert _gui.run() == 0
     assert [root.options["className"] for root in roots] == ["daily-limits"]
     assert roots[0].looped
+
+
+def _click(widget: FakeWidget, text: str) -> FakeWidget:
+    """Invoke the button labelled ``text`` anywhere under ``widget``."""
+    stack = [widget]
+    while stack:
+        found = stack.pop()
+        if found.options.get("text") == text:
+            cast("Callable[[], None]", found.options["command"])()
+            return found
+        stack.extend(found.children)
+    raise LookupError(text)
+
+
+def test_sick_days_button_launches_the_resolved_picker(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    launched: list[list[str]] = []
+    monkeypatch.setattr("daily_limits._sick_picker.shutil.which", lambda _n: "/b/sd")
+    monkeypatch.setattr(
+        "daily_limits._sick_picker.subprocess.Popen",
+        lambda argv, **_kwargs: launched.append(argv),
+    )
+    root, _texts_drawn = _popup(monkeypatch, _samples.report())
+    button = _click(root, "Sick days…")
+    assert (button.options["fg"], button.options["bg"]) == (tok.ACCENT, tok.INK)
+    assert launched == [["/b/sd", "gui"]]
+    assert "sickdays is not installed" not in dict(_texts(root))
+
+
+def test_sick_days_button_without_sickdays_says_so(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    root, texts = _popup(monkeypatch, _samples.report())
+    assert "Sick day" not in dict(texts)
+    _click(root, "Sick days…")
+    assert dict(_texts(root))["sickdays is not installed"] == tok.WARNING
+
+
+def test_sick_day_caption_sits_by_the_button(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    _root, texts = _popup(monkeypatch, _samples.report(sick=True))
+    assert dict(texts)["Sick day"] == tok.ACCENT
 
 
 def test_font_is_negative_pixels() -> None:
