@@ -172,10 +172,13 @@ def _expected_todo(day: date, start: int, *, sick: bool) -> list[int]:
     steps: list[int] = []
     running = start
     for item in _compat.earners(day):
-        running = min(ceiling, running + _compat.shutdown_left(item, 0, day))
-        steps.append(
-            earned_time.sick_shutdown_minutes(running, day) if sick else running
+        left = (
+            _compat.gaming_left(item, 0)
+            if sick
+            else _compat.shutdown_left(item, 0, day)
         )
+        running = min(ceiling, running + left)
+        steps.append(running)
     return steps
 
 
@@ -199,16 +202,16 @@ def test_sick_day_lifts_shutdown_and_every_todo_step(
     # ``floor`` stays the unlifted base: it is what an unsick day starts from.
     assert report["shutdown"]["floor"] == _report.hhmm(base)
     assert [row["shutdown_after"] for row in report["todo"]] == [
-        _report.hhmm(step) for step in _expected_todo(DAY, base, sick=True)
+        _report.hhmm(step)
+        for step in _expected_todo(
+            DAY, earned_time.SICK_SHUTDOWN_FLOOR_MINUTES, sick=True
+        )
     ]
-    # Never stacked on the lift: from the 20:00 floor the first step would be
-    # 22:00, but the walk starts from the earned base, so it stays at 21:00.
-    first = _expected_todo(DAY, base, sick=False)[0]
-    assert report["todo"][0]["shutdown_after"] == _report.hhmm(first)
-    assert (
-        first
-        < _expected_todo(DAY, earned_time.SICK_SHUTDOWN_FLOOR_MINUTES, sick=False)[0]
+    # Stacked (earned_time 0.13.0): the first step is 20:00 + its gaming pay.
+    first = earned_time.SICK_SHUTDOWN_FLOOR_MINUTES + _compat.gaming_left(
+        _compat.earners(DAY)[0], 0
     )
+    assert report["todo"][0]["shutdown_after"] == _report.hhmm(first)
 
 
 def test_sick_day_does_not_change_gaming(

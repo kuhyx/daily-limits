@@ -96,30 +96,29 @@ def _status(item: Earner, answer: int | None) -> Status:
 def _todo(resolution: Resolution) -> list[TodoRow]:
     """Not-done earners in registry order, each with the cumulative shutdown.
 
-    The walk starts from the *earned* shutdown (the sick floor's lift removed)
-    and re-applies the floor at every step, so on a sick day each step is
-    ``max(20:00, ladder)`` -- a lift is never double-counted nor stacked.
+    On a sick day (earned_time 0.13.0) the walk starts from the resolved
+    shutdown (20:00 plus what is done) and each step adds the earner's gaming
+    pay still left: credits stack on 20:00 at gaming pay.
     """
     rows: list[TodoRow] = []
-    shutdown = resolution.shutdown_minutes - resolution.sick_lift_minutes
+    sick = resolution.sick
+    shutdown = resolution.shutdown_minutes
     for term in resolution.terms:
         item: Earner = term.earner
         if term.answer is not None and not _compat.units_left(item, term.answer):
             continue
-        shutdown = min(
-            _compat.shutdown_ceiling(resolution.day),
-            shutdown + _compat.shutdown_left(item, term.answer, resolution.day),
+        left = (
+            _compat.gaming_left(item, term.answer)
+            if sick
+            else _compat.shutdown_left(item, term.answer, resolution.day)
         )
+        shutdown = min(_compat.shutdown_ceiling(resolution.day), shutdown + left)
         rows.append(
             {
                 "name": item.name,
                 "label": item.label,
                 "status": "unknown" if term.answer is None else "todo",
-                "shutdown_after": hhmm(
-                    earned_time.sick_shutdown_minutes(shutdown, resolution.day)
-                    if resolution.sick
-                    else shutdown
-                ),
+                "shutdown_after": hhmm(shutdown),
             }
         )
     return rows
