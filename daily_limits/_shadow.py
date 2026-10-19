@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Final, TypedDict
+from typing import TYPE_CHECKING, Final, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
     from datetime import date
@@ -60,15 +60,14 @@ def _no_data(day: date) -> LeisureShadow:
     }
 
 
-def _shadow_fields(
-    state: Path, day: date
-) -> tuple[float, float, dict[str, float]] | str:
-    """``(used s, budget s, per-source s)``, or why there is no data."""
-    try:
-        raw = json.loads(state.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        _logger.warning("Cannot read the playtime state %s (%s)", state, exc)
-        return "unreadable playtime state"
+class _Fields(NamedTuple):
+    used: float
+    budget: float
+    per_source: dict[str, float]
+
+
+def _why_not(state: Path, raw: object, day: date) -> str | None:
+    """Why ``raw`` holds no shadow data for ``day``; ``None`` when it does."""
     if not isinstance(raw, dict) or raw.get("day_key") != day.isoformat():
         return f"{state} is not for gaming day {day}"
     used, budget, per_source = (raw.get(name) for name in _FIELDS)
@@ -78,14 +77,31 @@ def _shadow_fields(
         isinstance(value, int | float) for value in per_source.values()
     ):
         return f"{state} has a malformed shadow_per_source"
-    return float(used), float(budget), {str(k): float(v) for k, v in per_source.items()}
+    return None
+
+
+def _shadow_fields(state: Path, day: date) -> _Fields | None:
+    """The C4 fields for ``day``; ``None`` (logged) when there are none."""
+    try:
+        raw = json.loads(state.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        _logger.warning("Shadow leisure: cannot read %s (%s)", state, exc)
+        return None
+    why = _why_not(state, raw, day)
+    if why is not None:
+        _logger.warning("Shadow leisure: no data (%s)", why)
+        return None
+    return _Fields(
+        float(raw["shadow_seconds"]),
+        float(raw["shadow_budget_seconds"]),
+        {str(k): float(v) for k, v in raw["shadow_per_source"].items()},
+    )
 
 
 def build(state: Path, day: date, names: dict[str, str]) -> LeisureShadow:
     """The C5 block for gaming day ``day``, labelled with ``names``."""
     fields = _shadow_fields(state, day)
-    if isinstance(fields, str):
-        _logger.warning("Shadow leisure: no data (%s)", fields)
+    if fields is None:
         return _no_data(day)
     used, budget, per_source = fields
     used_minutes, budget_minutes = int(used // 60), int(budget // 60)
