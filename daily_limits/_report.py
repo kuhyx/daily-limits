@@ -77,6 +77,7 @@ class Report(TypedDict):
     date: str
     generated_at: int
     sick: bool
+    leisure_active: bool
     shutdown: Shutdown
     gaming: Gaming
     earners: list[EarnerRow]
@@ -156,6 +157,11 @@ def build(now: datetime | None = None) -> Report:
         "date": day.isoformat(),
         "generated_at": int(moment.timestamp()),
         "sick": resolution.sick,
+        # Phase 2 (contract C6): the gaming budget is the leisure budget from
+        # the switch day on. Labels say "Leisure"; the keys stay ``gaming*``.
+        "leisure_active": earned_time.leisure_active(
+            game_day, path=_paths.LEISURE_FROM_FILE
+        ),
         "shutdown": {
             "applied": None if applied is None else hhmm(applied),
             "resolved": hhmm(resolution.shutdown_minutes),
@@ -168,7 +174,7 @@ def build(now: datetime | None = None) -> Report:
             "used_minutes": _sources.gaming_used_minutes(
                 _paths.PLAYTIME_STATE, game_day
             ),
-            "ceiling_minutes": earned_time.GAMING_CEILING_MINUTES,
+            "ceiling_minutes": earned_time.gaming_ceiling_minutes_for(game_day),
         },
         "earners": [
             {

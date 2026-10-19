@@ -97,7 +97,11 @@ def lines(facts: Facts | None) -> list[str]:
 
 
 def read_shadow(cache: Path | None) -> LeisureShadow | None:
-    """The cache's ``leisure_shadow``; ``None`` (logged) when unreadable."""
+    """The cache's ``leisure_shadow``; ``None`` (logged) when unreadable.
+
+    Also ``None`` once the leisure budget is live (``leisure_active``): the
+    shadow week is over, so a splash still up closes and a new one never shows.
+    """
     if cache is None:
         return None
     try:
@@ -105,7 +109,10 @@ def read_shadow(cache: Path | None) -> LeisureShadow | None:
     except (OSError, ValueError) as exc:
         _logger.warning("Cannot read the cache %s (%s)", cache, exc)
         return None
-    shadow = report.get("leisure_shadow") if isinstance(report, dict) else None
+    report = report if isinstance(report, dict) else {}
+    if report.get("leisure_active") is True:
+        return None
+    shadow = report.get("leisure_shadow")
     if not isinstance(shadow, dict):
         _logger.warning("The cache %s has no leisure_shadow", cache)
         return None

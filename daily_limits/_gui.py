@@ -91,7 +91,8 @@ class Popup:
         played = "used unknown" if used is None else f"{_render.duration(used)} used"
         self._label(
             self._body,
-            f"Gaming {_render.duration(game['budget_minutes'])} · {played}",
+            f"{_render.budget_word(report)}"
+            f" {_render.duration(game['budget_minutes'])} · {played}",
             "subtitle",
             bold=True,
         ).pack(anchor="w", pady=(tok.MD, 0))
@@ -107,6 +108,7 @@ class Popup:
         self._draw_sick_days(report)
 
     def _draw_earners(self, report: Report) -> None:
+        word = "leisure" if report.get("leisure_active") else "game"
         card = tk.Frame(self._body, bg=tok.INK_RAISED_1, padx=tok.MD, pady=tok.SM)
         card.pack(fill="x", pady=(tok.MD, 0))
         for row, earner in enumerate(report["earners"]):
@@ -123,7 +125,7 @@ class Popup:
                 (
                     ""
                     if done
-                    else f"+{_render.duration(earner['gaming_minutes'])} game",
+                    else f"+{_render.duration(earner['gaming_minutes'])} {word}",
                     tok.MUTED_ON_DARK,
                     "label",
                 ),

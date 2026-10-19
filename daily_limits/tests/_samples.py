@@ -24,6 +24,7 @@ def report(
     gaming_day: str = "2026-10-09",
     statuses: tuple[Status, ...] = ("done", "todo", "unknown"),
     shadow_left: int | None = 192,
+    leisure_active: bool = False,
 ) -> Report:
     """A report with one earner per status in ``statuses``."""
     names = [f"e{index}" for index in range(len(statuses))]
@@ -41,6 +42,7 @@ def report(
         "date": "2026-10-09",
         "generated_at": 1791532875,
         "sick": sick,
+        "leisure_active": leisure_active,
         "shutdown": {
             "applied": applied,
             "resolved": resolved,

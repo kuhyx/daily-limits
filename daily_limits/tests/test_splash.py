@@ -232,3 +232,16 @@ def test_run_opens_a_classed_root_and_loops(
     assert _splash.run(write_cache(tmp_path / "c.json")) == 0
     assert [root.options["className"] for root in roots] == ["daily-limits-splash"]
     assert roots[0].looped
+
+
+def test_never_shows_once_the_leisure_budget_is_live(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, roots: list[FakeRoot]
+) -> None:
+    del roots
+    monkeypatch.setattr(_splash, "monitor", lambda: None)
+    cache = write_cache(tmp_path / "c.json")
+    report = json.loads(cache.read_text(encoding="utf-8"))
+    cache.write_text(json.dumps({**report, "leisure_active": True}), encoding="utf-8")
+    root = FakeRoot()
+    _splash.Splash(cast("tk.Tk", root), cache)
+    assert root.destroyed

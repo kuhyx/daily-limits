@@ -39,7 +39,7 @@ first is read by the i3blocks block). `install.sh --dry-run` prints every step i
 Fixed: the i3blocks block parses it.
 
 ```json
-{"date": "YYYY-MM-DD", "generated_at": 1791532875, "sick": false,
+{"date": "YYYY-MM-DD", "generated_at": 1791532875, "sick": false, "leisure_active": false,
  "shutdown": {"applied": "HH:MM|null", "resolved": "HH:MM", "floor": "HH:MM", "ceiling": "HH:MM"},
  "gaming": {"day": "YYYY-MM-DD", "budget_minutes": 180, "used_minutes": 94, "ceiling_minutes": 480},
  "earners": [{"name": "workout", "label": "workout", "status": "done|todo|unknown",
@@ -85,6 +85,15 @@ Fixed: the i3blocks block parses it.
   `label` is leisure-watch's live label for that key (signed
   `$XDG_RUNTIME_DIR/leisure-watch/now.json`), else the key. The i3blocks
   block `leisure_shadow.sh` renders it.
+- `leisure_active` (Phase 2, contract C6) is
+  `earned_time.leisure_active(gaming.day, path=...)`: whether the switch file
+  `/etc/leisure-watch/leisure_from` (written by `leisure-watch go-live`) has
+  made the gaming day's budget the leisure budget. It is never read here
+  directly. While `true`, the summary and the popup say "Leisure" where they
+  said "Gaming" (the keys stay `gaming*`), `gaming.ceiling_minutes` is the
+  leisure cap, `leisure_shadow` is still filled but only mirrors the now
+  enforced numbers, and the shadow alerts and the splash never fire (a splash
+  still up closes). `false` until then.
 - `todo` lists the not-done earners in registry order, each with the cumulative
   shutdown time reached once it is done too (capped at the ceiling). Its
   `status` is `todo` or `unknown`, so a bar can show unknown ones as such.

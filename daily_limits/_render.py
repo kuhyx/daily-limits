@@ -32,20 +32,26 @@ def _shutdown_line(report: Report) -> str:
     return f"{head}   [floor {shut['floor']}, ceiling {shut['ceiling']}]"
 
 
+def budget_word(report: Report) -> str:
+    """``Leisure`` once the leisure budget is live (Phase 2), else ``Gaming``."""
+    return "Leisure" if report.get("leisure_active") else "Gaming"
+
+
 def _gaming_line(report: Report) -> str:
     game = report["gaming"]
     budget = duration(game["budget_minutes"])
     used = game["used_minutes"]
     played = "used unknown" if used is None else f"{duration(used)} used"
     ceiling = duration(game["ceiling_minutes"])
-    line = f"Gaming     {budget} budget, {played}   [ceiling {ceiling}]"
+    line = f"{budget_word(report):<11}{budget} budget, {played}   [ceiling {ceiling}]"
     return line + gaming_day_note(report)
 
 
 def gaming_day_note(report: Report) -> str:
     """`` (gaming day YYYY-MM-DD)`` before 06:00, when it is not today."""
     day = report["gaming"]["day"]
-    return "" if day == report["date"] else f" (gaming day {day})"
+    word = budget_word(report).lower()
+    return "" if day == report["date"] else f" ({word} day {day})"
 
 
 def heading(report: Report) -> str:
@@ -56,6 +62,7 @@ def heading(report: Report) -> str:
 def summary(report: Report) -> str:
     """The multi-line text the bare ``daily-limits`` command prints."""
     lines = [heading(report), _shutdown_line(report), _gaming_line(report)]
+    word = budget_word(report).lower()
     lines.append("")
     lines.append("Earners")
     for row in report["earners"]:
@@ -65,7 +72,7 @@ def summary(report: Report) -> str:
         if row["status"] != "done":
             shutdown = duration(row["shutdown_minutes"])
             gaming = duration(row["gaming_minutes"])
-            amounts = f"+{shutdown:>5} shutdown  +{gaming:>5} gaming"
+            amounts = f"+{shutdown:>5} shutdown  +{gaming:>5} {word}"
         lines.append(
             f"  {mark} {row['label']:<11} {amounts}   {_STATUS_WORD[row['status']]}"
         )

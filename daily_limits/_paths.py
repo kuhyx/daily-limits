@@ -13,6 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
+import earned_time
+
 HOME: Final = Path.home()
 
 # The shared HMAC key every gate signs its ledger rows with.
@@ -23,6 +25,10 @@ SCHEDULE_FILE: Final = Path("/etc/shutdown-schedule.conf")
 
 # steam-backlog-enforcer's day state (root-owned, 0644 on purpose).
 PLAYTIME_STATE: Final = HOME / ".config/steam_backlog_enforcer/playtime_state.json"
+
+# The leisure switch file (contract C6), earned_time's own constant. Never read
+# here: it is only handed to ``earned_time.leisure_active(day, path=...)``.
+LEISURE_FROM_FILE: Final = earned_time.LEISURE_FROM_PATH
 
 # The cache the i3blocks block reads; lives in $XDG_RUNTIME_DIR.
 CACHE_NAME: Final = "daily-limits.json"

@@ -236,3 +236,15 @@ def test_sick_day_caption_sits_by_the_button(
 def test_font_is_negative_pixels() -> None:
     assert tok.font("body") == (tok.FAMILY, -16, "normal")
     assert tok.font("title", bold=True) == (tok.FAMILY, -24, "bold")
+
+
+def test_popup_says_leisure_once_live(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    report = _samples.report(leisure_active=True, gaming_day="2026-10-08")
+    shown = [text for text, _fg in _popup(monkeypatch, report)[1]]
+    assert "Leisure 3h · 1h34 used" in shown
+    assert "ceiling 8h (leisure day 2026-10-08)" in shown
+    assert shown.count("+25m leisure") == 2
+    assert not [text for text in shown if "Gaming" in text or "game" in text]

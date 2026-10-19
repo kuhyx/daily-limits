@@ -80,7 +80,12 @@ def _refresh_cache(target: Path) -> _report.Report:
 
 
 def _shadow_alerts(report: _report.Report) -> None:
-    """The shadow week's alerts; a failure there never costs the Firebase tick."""
+    """The shadow week's alerts; a failure there never costs the Firebase tick.
+
+    None once the leisure budget is live: the enforcer warns for real then.
+    """
+    if report["leisure_active"]:
+        return
     try:
         _alerts.tick(report["leisure_shadow"], _leisure_now.read())
     except OSError as exc:

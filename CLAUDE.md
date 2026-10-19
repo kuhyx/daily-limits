@@ -34,6 +34,10 @@ Read README.md first, then DOCS-sources.md.
 - **Stdlib + earned_time + sickdays + crdt_sync only, and every earner is read generically** from its
   ledger (`_answers.py`). Never read another app's private files (nothing
   under `~/src/screen-locker`). An earner with no ledger is `unknown`.
+- **Phase 2 is asked, never read.** `leisure_active` comes only from
+  `earned_time.leisure_active(gaming_day, path=_paths.LEISURE_FROM_FILE)`;
+  nothing here opens the switch file. Tests point it (and earned_time's own
+  `LEISURE_FROM_PATH`) at a missing temp file; `leisure_on` writes it.
 - **Gaming is per gaming day** (06:00 boundary, `gaming.day`). Shutdown is per
   calendar day.
 - Tests must redirect every `_paths` constant. They must never read the real

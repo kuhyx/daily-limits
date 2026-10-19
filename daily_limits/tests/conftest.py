@@ -19,13 +19,17 @@ Autouse, so no test can forget them:
   systemd-run, systemctl and xrandr resolve to names on no PATH, so no test
   notifies, launches a splash or asks the real X server;
 * ``tkinter.Tk`` raises: no test may open a real window (GUI tests install a
-  fake tk module instead).
+  fake tk module instead);
+* the leisure switch file (``/etc/leisure-watch/leisure_from``) is a missing
+  file under ``tmp_path`` for both daily-limits and earned_time's own
+  ``resolve()`` (``leisure_on`` writes it), so no test reads the real one.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from earned_time import _leisure
 import pytest
 import sickdays
 from sickdays import _paths as sick_paths
@@ -79,7 +83,22 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr("tkinter.Tk", _no_tk)
     monkeypatch.setattr(sick_paths, "LOG_PATH", sick_paths.Paths.under(tmp_path).log)
+    # Both readers of the switch file: ours (passed as ``path=``) and the one
+    # earned_time.resolve() looks up at call time for the base and the cap.
+    switch = tmp_path / "leisure_from"
+    monkeypatch.setattr(_paths, "LEISURE_FROM_FILE", switch)
+    monkeypatch.setattr(_leisure, "LEISURE_FROM_PATH", switch)
     return tmp_path
+
+
+@pytest.fixture
+def leisure_on(hermetic: Path) -> Callable[[date], None]:
+    """Write the (temp) switch file: the leisure budget is live from ``day``."""
+
+    def switch_on(day: date) -> None:
+        (hermetic / "leisure_from").write_text(f"{day.isoformat()}\n", encoding="utf-8")
+
+    return switch_on
 
 
 @pytest.fixture
