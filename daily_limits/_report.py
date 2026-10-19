@@ -14,12 +14,14 @@ from typing import TYPE_CHECKING, Final, Literal, TypedDict
 import earned_time
 import sickdays
 
-from daily_limits import _answers, _compat, _paths, _sources
+from daily_limits import _answers, _compat, _leisure_now, _paths, _shadow, _sources
 
 if TYPE_CHECKING:
     from datetime import date
 
     from earned_time import Earner, Resolution
+
+    from daily_limits._shadow import LeisureShadow
 
 Status = Literal["done", "todo", "unknown"]
 _MINUTES_PER_HOUR: Final = 60
@@ -79,6 +81,7 @@ class Report(TypedDict):
     gaming: Gaming
     earners: list[EarnerRow]
     todo: list[TodoRow]
+    leisure_shadow: LeisureShadow
 
 
 def hhmm(minutes: int) -> str:
@@ -183,4 +186,11 @@ def build(now: datetime | None = None) -> Report:
             for term in resolution.terms
         ],
         "todo": _todo(resolution),
+        # The shadow week (contract C5): the enforcer's would-be numbers for
+        # the same gaming day, labelled from leisure-watch's live reasons.
+        "leisure_shadow": _shadow.build(
+            _paths.PLAYTIME_STATE,
+            game_day,
+            _shadow.labels(_leisure_now.read(now=moment.timestamp())),
+        ),
     }

@@ -1,7 +1,8 @@
 # Data sources and their caveats
 
-Everything is read-only. The only file written is
-`$XDG_RUNTIME_DIR/daily-limits.json`.
+Everything is read-only. The files written are
+`$XDG_RUNTIME_DIR/daily-limits.json`, `--sync`'s state and the shadow alerts'
+`~/.local/state/daily-limits/shadow_alerts.json`.
 
 ## The HMAC key (`/etc/workout-locker/hmac.key`)
 
@@ -39,6 +40,16 @@ Every earner is read generically from its own signed ledger,
   clock), the value is `null` and a warning is logged.
 - The enforcer holds `max(live, stored)` for the day. Its enforced budget can
   therefore exceed `budget_minutes` here after a mid-day registry cut.
+
+## Shadow leisure (`playtime_state.json` C4 fields + `now.json`)
+
+- `shadow_seconds`, `shadow_budget_seconds` and `shadow_per_source` are
+  written by the enforcer (the only accountant) for its gaming day. Until it
+  writes them, or while `day_key` is another day, `leisure_shadow` is "no
+  data" (nulls), never zeros.
+- `now.json` is only trusted when its HMAC (the same key as the ledgers)
+  verifies and it is at most 15 s old (2 s of future skew allowed). Otherwise
+  labels fall back to keys and the alerts say leisure-watch is silent.
 
 ## Applied shutdown (`/etc/shutdown-schedule.conf`)
 

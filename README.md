@@ -19,6 +19,17 @@ daily-limits --sync         # --write-cache, then the Firebase tick (below)
 daily-limits --gui          # small Tk popup (Esc / q closes; refreshes every minute)
 ```
 
+`--sync` also runs the **shadow-week alerts** (nothing is blocked by them):
+a critical `notify-send` at would-be 60/30/10/5 min left (each once per
+gaming day; state in `~/.local/state/daily-limits/shadow_alerts.json`), and at
+would-be 0 `daily-limits --shadow-splash`, a large unmanaged (override-redirect,
+never focused, no grab) window on the primary monitor listing what would be
+killed or blocked now; click to dismiss, re-shown every 15 min while over. It
+runs in the transient user unit `daily-limits-shadow-splash` (`systemd-run
+--user --collect`), so it outlives the oneshot and two never run at once.
+`DAILY_LIMITS_CACHE` / `LEISURE_WATCH_NOW` override the cache and `now.json`
+paths (forwarded to the splash, with `DISPLAY`), for fixtures.
+
 `install.sh` installs the package into the system python's user site-packages
 and enables `daily-limits.timer` (every 60 s: `--sync`; the cache it writes
 first is read by the i3blocks block). `install.sh --dry-run` prints every step instead.
@@ -33,7 +44,9 @@ Fixed: the i3blocks block parses it.
  "gaming": {"day": "YYYY-MM-DD", "budget_minutes": 180, "used_minutes": 94, "ceiling_minutes": 480},
  "earners": [{"name": "workout", "label": "workout", "status": "done|todo|unknown",
               "shutdown_minutes": 120, "gaming_minutes": 120}],
- "todo": [{"name": "workout", "label": "workout", "status": "todo|unknown", "shutdown_after": "20:00"}]}
+ "todo": [{"name": "workout", "label": "workout", "status": "todo|unknown", "shutdown_after": "20:00"}],
+ "leisure_shadow": {"day": "YYYY-MM-DD", "budget_minutes": 600, "used_minutes": 108, "left_minutes": 492,
+                    "would_block": false, "sources": [{"key": "domain:youtube.com", "label": "YouTube — Helium", "minutes": 80}]}}
 ```
 
 - `shutdown.resolved` / `floor` / `ceiling` and `gaming.budget_minutes` come
@@ -61,6 +74,17 @@ Fixed: the i3blocks block parses it.
   `~/.config/steam_backlog_enforcer/playtime_state.json`; `null` if unreadable.
 - `status: "unknown"` means *could not check* (unreadable key or ledger). It is
   never a "no".
+- `leisure_shadow` (contract C5 of leisure-watch's `TODO-leisure-rollout.md`)
+  is the shadow week's would-be leisure budget for the same gaming day as
+  `gaming`. The numbers are steam-backlog-enforcer's own C4 fields in
+  `playtime_state.json` (`shadow_seconds`, the held `shadow_budget_seconds`,
+  `shadow_per_source`), never re-resolved here, so `would_block` (used >=
+  budget) is what the enforcer would block on. Missing fields or a state for
+  another day: `budget/used/left_minutes` are `null`, `would_block` false,
+  `sources` empty ("no data", never 0). `sources` is largest first; each
+  `label` is leisure-watch's live label for that key (signed
+  `$XDG_RUNTIME_DIR/leisure-watch/now.json`), else the key. The i3blocks
+  block `leisure_shadow.sh` renders it.
 - `todo` lists the not-done earners in registry order, each with the cumulative
   shutdown time reached once it is done too (capped at the ceiling). Its
   `status` is `todo` or `unknown`, so a bar can show unknown ones as such.

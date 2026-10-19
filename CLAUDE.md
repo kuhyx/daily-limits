@@ -6,11 +6,16 @@ Read README.md first, then DOCS-sources.md.
 
 - **Read-only locally.** Never write the shutdown schedule, a ledger or the
   budget, and never talk to or restart steam-backlog-enforcer's daemon. Local
-  writes: the cache under `$XDG_RUNTIME_DIR` and `--sync`'s state under
-  `~/.local/share/daily-limits/`. Remote writes: only `daily_limits/` in
+  writes: the cache under `$XDG_RUNTIME_DIR`, `--sync`'s state under
+  `~/.local/share/daily-limits/` and the shadow alerts' state under
+  `~/.local/state/daily-limits/`. Remote writes: only `daily_limits/` in
   Firebase (README "Firebase"). The popup's one button may *launch* the
   sickdays picker (`_sick_picker.py`: `sickdays gui`, detached, a subprocess,
   never an import); that program owns its own writes.
+- **The shadow week only shows.** `_alerts` may run `notify-send` and launch
+  the splash through `systemd-run --user` (unit `daily-limits-shadow-splash`);
+  the splash is override-redirect and must never grab or take focus. Its
+  numbers are the enforcer's C4 fields only (`_shadow.py`).
 - **A rest day goes through screen-locker's own CLI** (`_rest_day.py`, a
   subprocess), never an import, and only with a strictly validated date.
 - **Firebase never breaks the cache.** The cache is written first; any sync

@@ -12,7 +12,17 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from daily_limits import _atomic, _cli, _gui, _paths, _report, _sync
+from daily_limits import (
+    _alerts,
+    _atomic,
+    _cli,
+    _gui,
+    _leisure_now,
+    _paths,
+    _report,
+    _splash,
+    _sync,
+)
 from daily_limits.tests import _samples
 
 if TYPE_CHECKING:
@@ -63,8 +73,70 @@ def test_sync_writes_the_cache_then_ticks(monkeypatch: pytest.MonkeyPatch) -> No
         assert target.exists()
 
     monkeypatch.setattr(_sync, "tick", tick)
+    monkeypatch.setattr(_alerts, "tick", lambda shadow, facts: None)
     assert _cli.main(["--sync"]) == 0
     assert ticks == [_samples.report()]
+
+
+def test_sync_runs_the_shadow_alerts_after_the_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = Path(os.environ["XDG_RUNTIME_DIR"]) / _paths.CACHE_NAME
+    facts = _leisure_now.Facts(state="free", paused_by=None, reasons=())
+    alerts: list[object] = []
+
+    def alert(shadow: object, seen: object) -> None:
+        assert target.exists()
+        alerts.append((shadow, seen))
+
+    monkeypatch.setattr(_leisure_now, "read", lambda: facts)
+    monkeypatch.setattr(_alerts, "tick", alert)
+    monkeypatch.setattr(_sync, "tick", lambda report, rebuild: alerts.append("sync"))
+    assert _cli.main(["--sync"]) == 0
+    assert alerts == [(_samples.report()["leisure_shadow"], facts), "sync"]
+
+
+def test_a_failing_alert_never_costs_the_sync(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    def broken(shadow: object, facts: object) -> None:
+        del shadow, facts
+        msg = "read-only state dir"
+        raise OSError(msg)
+
+    synced: list[str] = []
+    monkeypatch.setattr(_alerts, "tick", broken)
+    monkeypatch.setattr(_sync, "tick", lambda report, rebuild: synced.append("sync"))
+    assert _cli.main(["--sync"]) == 0
+    assert synced == ["sync"]
+    assert "shadow alerts failed: read-only state dir" in caplog.text
+
+
+def test_write_cache_alone_never_alerts(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(shadow: object, facts: object) -> None:
+        raise AssertionError((shadow, facts))
+
+    monkeypatch.setattr(_alerts, "tick", refuse)
+    assert _cli.main(["--write-cache"]) == 0
+
+
+def test_cache_path_honours_the_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DAILY_LIMITS_CACHE", str(tmp_path / "c.json"))
+    assert _cli.cache_path() == tmp_path / "c.json"
+
+
+def test_shadow_splash_mode_shows_the_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    shown: list[Path | None] = []
+
+    def show(cache: Path | None) -> int:
+        shown.append(cache)
+        return 5
+
+    monkeypatch.setattr(_splash, "run", show)
+    assert _cli.main(["--shadow-splash"]) == 5
+    assert shown == [Path(os.environ["XDG_RUNTIME_DIR"]) / _paths.CACHE_NAME]
 
 
 def test_write_atomic_removes_its_temp_file_on_failure(

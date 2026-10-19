@@ -38,6 +38,7 @@ CONTRACT_KEYS = {
     "gaming",
     "earners",
     "todo",
+    "leisure_shadow",
 }
 
 

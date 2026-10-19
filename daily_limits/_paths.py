@@ -1,10 +1,11 @@
 # Copyright (c) 2026 Krzysztof Rudnicki
-"""Every file this app reads or writes, and the one program it runs.
+"""Every file this app reads or writes, and the programs it runs.
 
 Module constants so tests redirect them (monkeypatch) instead of ever touching
 the real ledgers, the real key or the real schedule. The only files written are
-:data:`CACHE_NAME` under ``$XDG_RUNTIME_DIR`` and the sync state under
-:data:`STATE_DIR`. Ledgers, the schedule and the budget are never written here.
+:data:`CACHE_NAME` under ``$XDG_RUNTIME_DIR``, the sync state under
+:data:`STATE_DIR` and the shadow alerts' :data:`ALERT_STATE_FILE`. Ledgers, the
+schedule and the budget are never written here.
 """
 
 from __future__ import annotations
@@ -25,6 +26,20 @@ PLAYTIME_STATE: Final = HOME / ".config/steam_backlog_enforcer/playtime_state.js
 
 # The cache the i3blocks block reads; lives in $XDG_RUNTIME_DIR.
 CACHE_NAME: Final = "daily-limits.json"
+
+# leisure-watch's signed "what counts right now" (contract C3), relative to
+# $XDG_RUNTIME_DIR; $LEISURE_WATCH_NOW overrides it.
+LEISURE_NOW_NAME: Final = "leisure-watch/now.json"
+
+# The shadow week's alert bookkeeping: thresholds notified and the last splash,
+# per gaming day.
+ALERT_STATE_FILE: Final = HOME / ".local/state/daily-limits/shadow_alerts.json"
+
+# The desktop helpers the shadow alerts run (looked up on PATH).
+NOTIFY_SEND: Final = "notify-send"
+SYSTEMD_RUN: Final = "systemd-run"
+SYSTEMCTL: Final = "systemctl"
+XRANDR: Final = "xrandr"
 
 # --sync's own state: the device id, what was last published, handled requests.
 STATE_DIR: Final = HOME / ".local/share/daily-limits"

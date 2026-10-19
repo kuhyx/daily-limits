@@ -23,6 +23,7 @@ def report(
     used: int | None = 94,
     gaming_day: str = "2026-10-09",
     statuses: tuple[Status, ...] = ("done", "todo", "unknown"),
+    shadow_left: int | None = 192,
 ) -> Report:
     """A report with one earner per status in ``statuses``."""
     names = [f"e{index}" for index in range(len(statuses))]
@@ -63,4 +64,12 @@ def report(
             for name, status in zip(names, statuses, strict=True)
         ],
         "todo": todo,
+        "leisure_shadow": {
+            "day": gaming_day,
+            "budget_minutes": None if shadow_left is None else 300,
+            "used_minutes": None if shadow_left is None else 300 - shadow_left,
+            "left_minutes": shadow_left,
+            "would_block": shadow_left == 0,
+            "sources": [],
+        },
     }
