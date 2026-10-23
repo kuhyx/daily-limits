@@ -8,7 +8,7 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
-        android:label="Daily limits"
+        android:label="DailyLimit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
