@@ -3,115 +3,19 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
-
 import pytest
 
 from daily_limits import _gui, _report
 from daily_limits import _tokens as tok
 from daily_limits.tests import _samples
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    import tkinter as tk
-
-
-class FakeWidget:
-    """Just enough of a Tk widget: options, children, bindings, timers."""
-
-    def __init__(self, master: FakeWidget | None = None, **options: object) -> None:
-        self.master = master
-        self.options: dict[str, object] = dict(options)
-        self.children: list[FakeWidget] = []
-        self.bindings: dict[str, Callable[[object], object]] = {}
-        self.timers: list[tuple[int, Callable[[], None]]] = []
-        self.destroyed = False
-        self.looped = False
-        if master is not None:
-            master.children.append(self)
-
-    def configure(self, **options: object) -> None:
-        self.options.update(options)
-
-    def cget(self, key: str) -> object:
-        return self.options.get(key, "")
-
-    def pack(self, **_options: object) -> None:
-        return None
-
-    def grid(self, **_options: object) -> None:
-        return None
-
-    def winfo_children(self) -> list[FakeWidget]:
-        return list(self.children)
-
-    def destroy(self) -> None:
-        self.destroyed = True
-        if self.master is not None:
-            self.master.children.remove(self)
-
-    def title(self, text: str) -> None:
-        self.options["title"] = text
-
-    def resizable(self, **_options: object) -> None:
-        return None
-
-    def bind(self, sequence: str, handler: Callable[[object], object]) -> None:
-        self.bindings[sequence] = handler
-
-    def after(self, delay: int, callback: Callable[[], None]) -> None:
-        self.timers.append((delay, callback))
-
-    def mainloop(self) -> None:
-        self.looped = True
-
-
-def _texts(widget: FakeWidget) -> list[tuple[str, object]]:
-    found: list[tuple[str, object]] = []
-    for child in widget.children:
-        if "text" in child.options:
-            found.append((str(child.options["text"]), child.options["fg"]))
-        found.extend(_texts(child))
-    return found
-
-
-@pytest.fixture
-def roots(monkeypatch: pytest.MonkeyPatch) -> list[FakeWidget]:
-    """Install the fake tk; returns the roots it creates."""
-    created: list[FakeWidget] = []
-
-    def make_root(**options: object) -> FakeWidget:
-        root = FakeWidget()
-        root.options.update(options)
-        created.append(root)
-        return root
-
-    fake_tk = SimpleNamespace(
-        Tk=make_root, Frame=FakeWidget, Label=FakeWidget, Button=FakeWidget
-    )
-    fake_font = SimpleNamespace(
-        nametofont=lambda _name: SimpleNamespace(actual=lambda _key: "Fake Sans")
-    )
-    monkeypatch.setattr(_gui, "tk", fake_tk)
-    monkeypatch.setattr(_gui, "tkfont", fake_font)
-    return created
-
-
-def _popup(
-    monkeypatch: pytest.MonkeyPatch, report: _report.Report
-) -> tuple[FakeWidget, list[tuple[str, object]]]:
-    monkeypatch.setattr(_report, "build", lambda: report)
-    root = FakeWidget()
-    _gui.Popup(cast("tk.Tk", root))
-    return root, _texts(root)
+from daily_limits.tests._fake_tk import FakeWidget, click, popup, texts
 
 
 def test_popup_draws_the_report(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
     del roots
-    root, texts = _popup(monkeypatch, _samples.report())
+    root, texts = popup(monkeypatch, _samples.report())
     labels = dict(texts)
     assert root.options["title"] == "Daily limits"
     assert root.options["bg"] == tok.INK
@@ -132,7 +36,7 @@ def test_popup_marks_a_sick_day(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
     del roots
-    _root, texts = _popup(monkeypatch, _samples.report(sick=True))
+    _root, texts = popup(monkeypatch, _samples.report(sick=True))
     assert "Today 2026-10-09 (sick day)" in dict(texts)
 
 
@@ -143,7 +47,7 @@ def test_popup_without_schedule_playtime_or_todo(
     report = _samples.report(
         applied=None, used=None, gaming_day="2026-10-08", statuses=("done",)
     )
-    _root, texts = _popup(monkeypatch, report)
+    _root, texts = popup(monkeypatch, report)
     labels = dict(texts)
     assert "Shutdown 18:00" in labels
     assert "Gaming 3h · used unknown" in labels
@@ -156,7 +60,7 @@ def test_refresh_redraws_and_reschedules(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
     del roots
-    root, _texts_first = _popup(monkeypatch, _samples.report())
+    root, _texts_first = popup(monkeypatch, _samples.report())
     body = root.children[0]
     first_children = list(body.children)
     delay, callback = root.timers[0]
@@ -172,7 +76,7 @@ def test_escape_and_q_close(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget], key: str
 ) -> None:
     del roots
-    root, _texts_drawn = _popup(monkeypatch, _samples.report())
+    root, _texts_drawn = popup(monkeypatch, _samples.report())
     root.bindings[key](object())
     assert root.destroyed
 
@@ -186,16 +90,6 @@ def test_run_opens_a_classed_root_and_loops(
     assert roots[0].looped
 
 
-def _click(widget: FakeWidget, text: str) -> FakeWidget:
-    """Invoke the button labelled ``text`` anywhere under ``widget``."""
-    stack = [widget]
-    while stack:
-        found = stack.pop()
-        if found.options.get("text") == text:
-            cast("Callable[[], None]", found.options["command"])()
-            return found
-        stack.extend(found.children)
-    raise LookupError(text)
 
 
 def test_sick_days_button_launches_the_resolved_picker(
@@ -208,28 +102,28 @@ def test_sick_days_button_launches_the_resolved_picker(
         "daily_limits._sick_picker.subprocess.Popen",
         lambda argv, **_kwargs: launched.append(argv),
     )
-    root, _texts_drawn = _popup(monkeypatch, _samples.report())
-    button = _click(root, "Sick days…")
+    root, _texts_drawn = popup(monkeypatch, _samples.report())
+    button = click(root, "Sick days…")
     assert (button.options["fg"], button.options["bg"]) == (tok.ACCENT, tok.INK)
     assert launched == [["/b/sd", "gui"]]
-    assert "sickdays is not installed" not in dict(_texts(root))
+    assert "sickdays is not installed" not in dict(texts(root))
 
 
 def test_sick_days_button_without_sickdays_says_so(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
     del roots
-    root, texts = _popup(monkeypatch, _samples.report())
-    assert "Sick day" not in dict(texts)
-    _click(root, "Sick days…")
-    assert dict(_texts(root))["sickdays is not installed"] == tok.WARNING
+    root, drawn = popup(monkeypatch, _samples.report())
+    assert "Sick day" not in dict(drawn)
+    click(root, "Sick days…")
+    assert dict(texts(root))["sickdays is not installed"] == tok.WARNING
 
 
 def test_sick_day_caption_sits_by_the_button(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
     del roots
-    _root, texts = _popup(monkeypatch, _samples.report(sick=True))
+    _root, texts = popup(monkeypatch, _samples.report(sick=True))
     assert dict(texts)["Sick day"] == tok.ACCENT
 
 
@@ -243,58 +137,8 @@ def test_popup_says_leisure_once_live(
 ) -> None:
     del roots
     report = _samples.report(leisure_active=True, gaming_day="2026-10-08")
-    shown = [text for text, _fg in _popup(monkeypatch, report)[1]]
+    shown = [text for text, _fg in popup(monkeypatch, report)[1]]
     assert "Leisure 3h · 1h34 used" in shown
     assert "ceiling 8h (leisure day 2026-10-08)" in shown
     assert shown.count("+25m leisure") == 2
     assert not [text for text in shown if "Gaming" in text or "game" in text]
-
-
-def _focus_report() -> _report.Report:
-    """The sample report with its second earner (todo) named ``focus``."""
-    report = _samples.report()
-    report["earners"][1]["name"] = "focus"
-    report["todo"][0]["name"] = "focus"
-    return report
-
-
-def _clickable(widget: FakeWidget) -> list[FakeWidget]:
-    """Every widget under ``widget`` that reacts to a left click."""
-    found = [child for child in widget.children if "<Button-1>" in child.bindings]
-    for child in widget.children:
-        found.extend(_clickable(child))
-    return found
-
-
-def test_the_focus_row_opens_the_focus_work(
-    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
-) -> None:
-    del roots
-    opened: list[str] = []
-    monkeypatch.setattr("daily_limits._focus_open.launch", lambda: opened.append("go"))
-    root, _texts_drawn = _popup(monkeypatch, _focus_report())
-    clickable = _clickable(root)
-    # Four cells of the earner row plus the row under "To extend".
-    assert len(clickable) == 5
-    assert {str(w.options["cursor"]) for w in clickable} == {"hand2"}
-    for widget in clickable:
-        widget.bindings["<Button-1>"](object())
-    assert opened == ["go"] * 5
-
-
-def test_other_rows_are_not_clickable(
-    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
-) -> None:
-    del roots
-    root, _texts_drawn = _popup(monkeypatch, _samples.report())
-    assert _clickable(root) == []
-
-
-def test_a_failed_focus_launch_is_said_in_the_popup(
-    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
-) -> None:
-    del roots
-    monkeypatch.setattr("daily_limits._focus_open.launch", lambda: "could not open")
-    root, _texts_drawn = _popup(monkeypatch, _focus_report())
-    _clickable(root)[0].bindings["<Button-1>"](object())
-    assert dict(_texts(root))["could not open"] == tok.WARNING

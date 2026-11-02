@@ -35,6 +35,8 @@ from daily_limits._atomic import write_atomic
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+_LOG = logging.getLogger(__name__)
+
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="daily-limits", description=__doc__)
@@ -91,7 +93,8 @@ def _cached_focus(target: Path) -> object:
     """The ``focus`` field of the cache at ``target`` (``None`` if unreadable)."""
     try:
         return json.loads(target.read_text(encoding="utf-8")).get("focus")
-    except OSError, ValueError, AttributeError:
+    except (OSError, ValueError, AttributeError) as exc:
+        _LOG.warning("cache %s unreadable, comparing against no focus: %r", target, exc)
         return None
 
 
@@ -105,7 +108,7 @@ def _shadow_alerts(report: _report.Report) -> None:
     try:
         _alerts.tick(report["leisure_shadow"], _leisure_now.read())
     except OSError as exc:
-        logging.getLogger(__name__).warning("shadow alerts failed: %s", exc)
+        _LOG.warning("shadow alerts failed: %s", exc)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

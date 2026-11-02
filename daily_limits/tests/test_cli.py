@@ -52,6 +52,16 @@ def test_write_cache_writes_the_contract_atomically() -> None:
     assert [p.name for p in target.parent.iterdir()] == [_paths.CACHE_NAME]
 
 
+def test_an_unreadable_old_cache_is_said_not_swallowed(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    target = Path(os.environ["XDG_RUNTIME_DIR"]) / _paths.CACHE_NAME
+    target.write_text("{not json", encoding="utf-8")
+    assert _cli.main(["--write-cache"]) == 0
+    assert "unreadable" in caplog.text
+    assert json.loads(target.read_text(encoding="utf-8")) == _samples.report()
+
+
 def test_write_cache_without_a_runtime_dir_fails(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -28,8 +28,9 @@ def fetch(day: date) -> dict[str, Any] | None:
     try:
         module = importlib.import_module("focus_project")
         status = module.status(day)
-    except Exception as exc:  # noqa: BLE001 - soft by contract: any failure drops the field
-        _LOG.warning("focus_project unavailable, no focus field: %r", exc)
+    except Exception:
+        # Soft by contract: any failure drops the field; the traceback says why.
+        _LOG.exception("focus_project unavailable, no focus field")
         return None
     if not isinstance(status, dict):
         _LOG.warning("focus_project.status returned %s, no focus field", type(status))

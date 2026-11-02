@@ -28,6 +28,7 @@ Autouse, so no test can forget them:
 from __future__ import annotations
 
 import sys
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from earned_time import _leisure
@@ -35,7 +36,8 @@ import pytest
 import sickdays
 from sickdays import _paths as sick_paths
 
-from daily_limits import _paths, _sick_picker, _sync_client
+from daily_limits import _gui, _paths, _sick_picker, _sync_client
+from daily_limits.tests._fake_tk import FakeWidget
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -115,3 +117,25 @@ def sick_pool(hermetic: Path) -> Callable[[date], None]:
         sickdays.add_sick_day(day, is_free=lambda _day: False, paths=paths, now=day)
 
     return mark
+
+
+@pytest.fixture
+def roots(monkeypatch: pytest.MonkeyPatch) -> list[FakeWidget]:
+    """Install the fake tk; returns the roots it creates."""
+    created: list[FakeWidget] = []
+
+    def make_root(**options: object) -> FakeWidget:
+        root = FakeWidget()
+        root.options.update(options)
+        created.append(root)
+        return root
+
+    fake_tk = SimpleNamespace(
+        Tk=make_root, Frame=FakeWidget, Label=FakeWidget, Button=FakeWidget
+    )
+    fake_font = SimpleNamespace(
+        nametofont=lambda _name: SimpleNamespace(actual=lambda _key: "Fake Sans")
+    )
+    monkeypatch.setattr(_gui, "tk", fake_tk)
+    monkeypatch.setattr(_gui, "tkfont", fake_font)
+    return created

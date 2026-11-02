@@ -30,7 +30,11 @@ jobs:
       - uses: actions/setup-python@v5
         id: py
         with:
-          python-version: "3.x"
+          # TODO(2026-11-02): back to "3.x" once dill (pylint's parallel mode)
+          # works on 3.15: dill 0.4.1, the newest, reads the removed
+          # code.co_lnotab and crashes pylint -j0. pylint 4.1.3 / astroid 4.3.4
+          # are already the newest, so there is nothing to bump.
+          python-version: "3.14"
       - name: Ensure tkinter and shellcheck
         run: |
           python -c 'import tkinter' || { sudo apt-get update; sudo apt-get install -y python3-tk; }
