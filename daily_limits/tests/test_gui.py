@@ -248,3 +248,53 @@ def test_popup_says_leisure_once_live(
     assert "ceiling 8h (leisure day 2026-10-08)" in shown
     assert shown.count("+25m leisure") == 2
     assert not [text for text in shown if "Gaming" in text or "game" in text]
+
+
+def _focus_report() -> _report.Report:
+    """The sample report with its second earner (todo) named ``focus``."""
+    report = _samples.report()
+    report["earners"][1]["name"] = "focus"
+    report["todo"][0]["name"] = "focus"
+    return report
+
+
+def _clickable(widget: FakeWidget) -> list[FakeWidget]:
+    """Every widget under ``widget`` that reacts to a left click."""
+    found = [child for child in widget.children if "<Button-1>" in child.bindings]
+    for child in widget.children:
+        found.extend(_clickable(child))
+    return found
+
+
+def test_the_focus_row_opens_the_focus_work(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    opened: list[str] = []
+    monkeypatch.setattr("daily_limits._focus_open.launch", lambda: opened.append("go"))
+    root, _texts_drawn = _popup(monkeypatch, _focus_report())
+    clickable = _clickable(root)
+    # Four cells of the earner row plus the row under "To extend".
+    assert len(clickable) == 5
+    assert {str(w.options["cursor"]) for w in clickable} == {"hand2"}
+    for widget in clickable:
+        widget.bindings["<Button-1>"](object())
+    assert opened == ["go"] * 5
+
+
+def test_other_rows_are_not_clickable(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    root, _texts_drawn = _popup(monkeypatch, _samples.report())
+    assert _clickable(root) == []
+
+
+def test_a_failed_focus_launch_is_said_in_the_popup(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    monkeypatch.setattr("daily_limits._focus_open.launch", lambda: "could not open")
+    root, _texts_drawn = _popup(monkeypatch, _focus_report())
+    _clickable(root)[0].bindings["<Button-1>"](object())
+    assert dict(_texts(root))["could not open"] == tok.WARNING

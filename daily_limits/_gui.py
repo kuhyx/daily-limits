@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Final
 
-from daily_limits import _render, _report, _sick_picker
+from daily_limits import _focus_open, _render, _report, _sick_picker
 from daily_limits import _tokens as tok
 
 if TYPE_CHECKING:
@@ -26,6 +26,8 @@ _STATUS_COLOUR: Final = {
     "unknown": tok.MUTED_ON_DARK,
 }
 _STATUS_WORD: Final = {"done": "done", "todo": "to do", "unknown": "could not check"}
+# The registry name of the focus earner: its row opens the work (see below).
+_FOCUS: Final = "focus"
 
 
 class Popup:
@@ -40,6 +42,7 @@ class Popup:
         root.resizable(width=False, height=False)
         root.bind("<Escape>", lambda _event: root.destroy())
         root.bind("q", lambda _event: root.destroy())
+        self._notice: tk.Label | None = None
         self._body = tk.Frame(root, bg=tok.INK)
         self._body.pack(fill="both", expand=True)
         self.refresh()
@@ -61,6 +64,19 @@ class Popup:
         return tk.Label(
             parent, text=text, fg=fg, bg=bg, font=self._font(role, bold=bold)
         )
+
+    def _open_focus(self, _event: object = None) -> None:
+        """Click on the focus row: the tutor focus screen and the work URL."""
+        message = _focus_open.launch()
+        if message is not None and self._notice is not None:
+            self._notice.configure(text=message)
+
+    def _link(self, label: tk.Label, name: str) -> tk.Label:
+        """Make ``label`` open the focus work when it is the focus row's."""
+        if name == _FOCUS:
+            label.configure(cursor="hand2")
+            label.bind("<Button-1>", self._open_focus)
+        return label
 
     def refresh(self) -> None:
         """Rebuild the report and redraw; reschedules itself."""
@@ -132,7 +148,7 @@ class Popup:
                 (_STATUS_WORD[earner["status"]], colour, "label"),
             )
             for column, (text, fg, role) in enumerate(cells):
-                self._label(card, text, role, fg=fg).grid(
+                self._link(self._label(card, text, role, fg=fg), earner["name"]).grid(
                     row=row, column=column, sticky="w", padx=(0, tok.MD), pady=tok.XS
                 )
 
@@ -147,18 +163,21 @@ class Popup:
         )
         for row in report["todo"]:
             unknown = row["status"] == "unknown"
-            self._label(
-                self._body,
-                f"{row['label']}  →  shutdown {row['shutdown_after']}"
-                + ("  (could not check)" if unknown else ""),
-                "body",
-                fg=tok.MUTED_ON_DARK if unknown else tok.TEXT_ON_DARK,
+            self._link(
+                self._label(
+                    self._body,
+                    f"{row['label']}  →  shutdown {row['shutdown_after']}"
+                    + ("  (could not check)" if unknown else ""),
+                    "body",
+                    fg=tok.MUTED_ON_DARK if unknown else tok.TEXT_ON_DARK,
+                ),
+                row["name"],
             ).pack(anchor="w")
 
     def _draw_sick_days(self, report: Report) -> None:
         row = tk.Frame(self._body, bg=tok.INK)
         row.pack(fill="x", pady=(tok.LG, 0))
-        notice = self._label(row, "", "caption", fg=tok.WARNING)
+        notice = self._notice = self._label(row, "", "caption", fg=tok.WARNING)
 
         def open_picker() -> None:
             notice.configure(text=_sick_picker.launch() or "")
