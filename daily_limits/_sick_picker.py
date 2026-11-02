@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import logging
 import shutil
-import subprocess
 from typing import Final
+
+from daily_limits import _detached
 
 _logger = logging.getLogger(__name__)
 
@@ -32,15 +33,7 @@ def launch() -> str | None:
         )
         return NOT_INSTALLED
     try:
-        # Not a `with`: leaving it would wait for the picker, which must
-        # outlive the popup.
-        subprocess.Popen(  # pylint: disable=consider-using-with
-            [path, "gui"],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
+        _detached.start([path, "gui"])
     except OSError as exc:
         _logger.warning("could not start %s gui: %s", path, exc)
         return NOT_INSTALLED

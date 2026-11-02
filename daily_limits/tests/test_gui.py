@@ -90,8 +90,6 @@ def test_run_opens_a_classed_root_and_loops(
     assert roots[0].looped
 
 
-
-
 def test_sick_days_button_launches_the_resolved_picker(
     monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
 ) -> None:
@@ -99,7 +97,7 @@ def test_sick_days_button_launches_the_resolved_picker(
     launched: list[list[str]] = []
     monkeypatch.setattr("daily_limits._sick_picker.shutil.which", lambda _n: "/b/sd")
     monkeypatch.setattr(
-        "daily_limits._sick_picker.subprocess.Popen",
+        "daily_limits._detached.subprocess.Popen",
         lambda argv, **_kwargs: launched.append(argv),
     )
     root, _texts_drawn = popup(monkeypatch, _samples.report())

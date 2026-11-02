@@ -22,7 +22,7 @@ def test_launch_starts_the_module_detached_under_the_system_python(
         calls.append((argv, kwargs))
         return object()
 
-    monkeypatch.setattr("daily_limits._focus_open.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("daily_limits._detached.subprocess.Popen", fake_popen)
     assert _focus_open.launch() is None
     assert calls == [
         (
@@ -44,7 +44,7 @@ def test_launch_survives_a_popen_oserror(
         msg = "no such file"
         raise OSError(msg)
 
-    monkeypatch.setattr("daily_limits._focus_open.subprocess.Popen", broken)
+    monkeypatch.setattr("daily_limits._detached.subprocess.Popen", broken)
     with caplog.at_level(logging.WARNING):
         assert _focus_open.launch() == "could not open the focus work"
     assert "could not start focus_project.open" in caplog.text

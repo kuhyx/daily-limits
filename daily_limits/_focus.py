@@ -20,7 +20,7 @@ from daily_limits import _paths
 if TYPE_CHECKING:
     from datetime import date
 
-_LOG = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 def fetch(day: date) -> dict[str, Any] | None:
@@ -28,12 +28,14 @@ def fetch(day: date) -> dict[str, Any] | None:
     try:
         module = importlib.import_module("focus_project")
         status = module.status(day)
-    except Exception:
-        # Soft by contract: any failure drops the field; the traceback says why.
-        _LOG.exception("focus_project unavailable, no focus field")
+    except ImportError, OSError, ValueError, LookupError, TypeError, AttributeError:
+        # Soft by contract: a failure drops the field; the traceback says why.
+        _logger.exception("focus_project unavailable, no focus field")
         return None
     if not isinstance(status, dict):
-        _LOG.warning("focus_project.status returned %s, no focus field", type(status))
+        _logger.warning(
+            "focus_project.status returned %s, no focus field", type(status)
+        )
         return None
     return status
 
@@ -45,4 +47,4 @@ def notify() -> None:
         # pkill exits 1 when no i3blocks runs (headless): not an error here.
         subprocess.run(cmd, check=False, timeout=10)
     except (OSError, subprocess.SubprocessError) as exc:
-        _LOG.warning("could not run pkill to refresh i3blocks: %s", exc)
+        _logger.warning("could not run pkill to refresh i3blocks: %s", exc)

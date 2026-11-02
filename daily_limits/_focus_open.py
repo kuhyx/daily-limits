@@ -11,8 +11,9 @@ own session, so closing the popup does not take the opened windows down.
 from __future__ import annotations
 
 import logging
-import subprocess
 from typing import Final
+
+from daily_limits import _detached
 
 _logger = logging.getLogger(__name__)
 
@@ -27,14 +28,7 @@ def launch() -> str | None:
         ``None`` once it is started, else a one-line message for the popup.
     """
     try:
-        # Not a `with`: leaving it would wait for the tutor server to come up.
-        subprocess.Popen(  # pylint: disable=consider-using-with
-            [SYSTEM_PYTHON, "-m", "focus_project.open"],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
+        _detached.start([SYSTEM_PYTHON, "-m", "focus_project.open"])
     except OSError as exc:
         _logger.warning("could not start focus_project.open: %s", exc)
         return FAILED

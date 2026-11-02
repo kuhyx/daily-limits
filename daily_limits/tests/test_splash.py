@@ -12,7 +12,7 @@ import pytest
 
 from daily_limits import _leisure_now, _paths, _splash
 from daily_limits import _tokens as tok
-from daily_limits.tests.test_gui import FakeWidget
+from daily_limits.tests._fake_tk import FakeWidget
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -25,7 +25,7 @@ def test_launch_starts_the_resolved_executable_detached(
     monkeypatch.setattr(
         "daily_limits._sick_picker.shutil.which", lambda _name: "/x/sickdays"
     )
-    monkeypatch.setattr("daily_limits._sick_picker.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("daily_limits._detached.subprocess.Popen", fake_popen)
     assert _sick_picker.launch() is None
     assert calls == [
         (
@@ -57,7 +57,7 @@ def test_launch_survives_a_popen_oserror(
     monkeypatch.setattr(
         "daily_limits._sick_picker.shutil.which", lambda _name: "/x/sickdays"
     )
-    monkeypatch.setattr("daily_limits._sick_picker.subprocess.Popen", broken)
+    monkeypatch.setattr("daily_limits._detached.subprocess.Popen", broken)
     with caplog.at_level(logging.WARNING):
         assert _sick_picker.launch() == "sickdays is not installed"
     assert "exec format error" in caplog.text

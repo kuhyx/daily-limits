@@ -32,8 +32,8 @@ jobs:
         with:
           # TODO(2026-11-02): back to "3.x" once dill (pylint's parallel mode)
           # works on 3.15: dill 0.4.1, the newest, reads the removed
-          # code.co_lnotab and crashes pylint -j0. pylint 4.1.3 / astroid 4.3.4
-          # are already the newest, so there is nothing to bump.
+          # code.co_lnotab and crashes pylint -j0. pylint 4.1.3 and its
+          # parser are already the newest, so there is nothing to bump.
           python-version: "3.14"
       - name: Ensure tkinter and shellcheck
         run: |
