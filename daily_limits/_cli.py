@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from daily_limits import (
     _alerts,
+    _focus,
     _gui,
     _leisure_now,
     _paths,
@@ -73,10 +74,25 @@ def cache_path() -> Path | None:
 
 
 def _refresh_cache(target: Path) -> _report.Report:
-    """Build today's report and write it to the cache; return the report."""
+    """Build today's report and write it to the cache; return the report.
+
+    i3blocks is poked when the focus status differs from the cache it
+    replaces, so the bar follows a check-in at once instead of a minute later.
+    """
+    previous = _cached_focus(target)
     report = _report.build()
     write_atomic(target, json.dumps(report) + "\n")
+    if report.get("focus") != previous:
+        _focus.notify()
     return report
+
+
+def _cached_focus(target: Path) -> object:
+    """The ``focus`` field of the cache at ``target`` (``None`` if unreadable)."""
+    try:
+        return json.loads(target.read_text(encoding="utf-8")).get("focus")
+    except OSError, ValueError, AttributeError:
+        return None
 
 
 def _shadow_alerts(report: _report.Report) -> None:

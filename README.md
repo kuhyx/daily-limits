@@ -32,7 +32,8 @@ paths (forwarded to the splash, with `DISPLAY`), for fixtures.
 
 `install.sh` installs the package into the system python's user site-packages
 and enables `daily-limits.timer` (every 60 s: `--sync`; the cache it writes
-first is read by the i3blocks block). `install.sh --dry-run` prints every step instead.
+first is read by the i3blocks block). `daily-limits-focus.path` re-writes the cache when
+the focus project's files change. `install.sh --dry-run` prints every step instead.
 
 ## JSON contract
 
@@ -49,6 +50,9 @@ Fixed: the i3blocks block parses it.
                     "would_block": false, "sources": [{"key": "domain:youtube.com", "label": "YouTube — Helium", "minutes": 80}]}}
 ```
 
+- `focus` (optional) is `focus_project.status(today)` (`project` is null when none
+  is active); absent, with a log line, when that package fails. The i3blocks
+  `focus_project` block renders it.
 - `shutdown.resolved` / `floor` / `ceiling` and `gaming.budget_minutes` come
   from `earned_time.resolve()` and its constants. Nothing is hard-coded.
   Per-earner `shutdown_minutes`, the ceiling and `todo` use the day-aware

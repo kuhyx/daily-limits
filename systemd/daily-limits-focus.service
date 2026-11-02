@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the limits cache after the focus project changed (pokes i3blocks)
+# A burst of check-ins must never trip systemd's start limit and kill the .path.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+# Cache only, no Firebase: the 60 s daily-limits.timer publishes. Writing the
+# cache pokes i3blocks (pkill -RTMIN+11) when the focus status changed.
+ExecStart=%h/.local/bin/daily-limits --write-cache
+Nice=10

@@ -1,0 +1,12 @@
+[Unit]
+Description=Watch the focus project's activity, ledger and registry
+
+[Path]
+# close_write on any of them: the focus block follows a check-in at once.
+PathChanged=%h/.local/share/focus_project/activity.jsonl
+PathChanged=%h/.local/share/focus_project/ledger.json
+PathChanged=%h/.local/share/focus_project/projects.json
+Unit=daily-limits-focus.service
+
+[Install]
+WantedBy=default.target

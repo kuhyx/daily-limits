@@ -9,12 +9,20 @@ no code change. The contract's keys are fixed -- an i3blocks script reads them.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Final, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Final, Literal, NotRequired, TypedDict
 
 import earned_time
 import sickdays
 
-from daily_limits import _answers, _compat, _leisure_now, _paths, _shadow, _sources
+from daily_limits import (
+    _answers,
+    _compat,
+    _focus,
+    _leisure_now,
+    _paths,
+    _shadow,
+    _sources,
+)
 
 if TYPE_CHECKING:
     from datetime import date
@@ -83,6 +91,8 @@ class Report(TypedDict):
     earners: list[EarnerRow]
     todo: list[TodoRow]
     leisure_shadow: LeisureShadow
+    # focus_project.status(today); absent when that package cannot be used.
+    focus: NotRequired[dict[str, Any]]
 
 
 def hhmm(minutes: int) -> str:
@@ -153,7 +163,7 @@ def build(now: datetime | None = None) -> Report:
     game_day = _answers.gaming_day(moment)
     gaming = resolution if game_day == day else _resolve(game_day, moment)
     applied = _sources.applied_shutdown(_paths.SCHEDULE_FILE, day)
-    return {
+    report: Report = {
         "date": day.isoformat(),
         "generated_at": int(moment.timestamp()),
         "sick": resolution.sick,
@@ -200,3 +210,7 @@ def build(now: datetime | None = None) -> Report:
             _shadow.labels(_leisure_now.read(now=moment.timestamp())),
         ),
     }
+    focus = _focus.fetch(day)
+    if focus is not None:
+        report["focus"] = focus
+    return report

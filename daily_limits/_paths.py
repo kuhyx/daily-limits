@@ -46,6 +46,11 @@ NOTIFY_SEND: Final = "notify-send"
 SYSTEMD_RUN: Final = "systemd-run"
 SYSTEMCTL: Final = "systemctl"
 XRANDR: Final = "xrandr"
+PKILL: Final = "pkill"
+
+# i3blocks `signal=` of the focus_project block (SIGRTMIN+N): the same number
+# is in linux_configuration/i3blocks/config.
+FOCUS_SIGNAL: Final = 11
 
 # --sync's own state: the device id, what was last published, handled requests.
 STATE_DIR: Final = HOME / ".local/share/daily-limits"

@@ -27,6 +27,7 @@ Autouse, so no test can forget them:
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 
 from earned_time import _leisure
@@ -76,8 +77,11 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(_sync_client, "firebase_client_for", _no_firebase)
     monkeypatch.setattr(_sick_picker, "EXECUTABLE", "sickdays-absent-in-tests")
     monkeypatch.setattr(_paths, "ALERT_STATE_FILE", tmp_path / "alerts" / "a.json")
-    for name in ("NOTIFY_SEND", "SYSTEMD_RUN", "SYSTEMCTL", "XRANDR"):
+    for name in ("NOTIFY_SEND", "SYSTEMD_RUN", "SYSTEMCTL", "XRANDR", "PKILL"):
         monkeypatch.setattr(_paths, name, f"{name.lower()}-absent-in-tests")
+    # focus_project is a soft import: None here means "not installed", so no
+    # test reads the real projects.json (a test that needs it installs a fake).
+    monkeypatch.setitem(sys.modules, "focus_project", None)
     monkeypatch.delenv("DAILY_LIMITS_CACHE", raising=False)
     monkeypatch.delenv("LEISURE_WATCH_NOW", raising=False)
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))

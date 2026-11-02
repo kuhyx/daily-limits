@@ -17,7 +17,7 @@ readonly REPO_DIR
 readonly SYSTEM_PYTHON="/usr/bin/python3"
 readonly UNIT_DIR="${HOME}/.config/systemd/user"
 readonly BIN="${HOME}/.local/bin/daily-limits"
-readonly UNITS=(daily-limits.service daily-limits.timer)
+readonly UNITS=(daily-limits.service daily-limits.timer daily-limits-focus.service daily-limits-focus.path)
 DRY_RUN=0
 
 log() { printf 'install: %s\n' "$1" >&2; }
@@ -77,7 +77,7 @@ install_units() {
         run install -m 644 "$REPO_DIR/systemd/$unit" "$UNIT_DIR/"
     done
     run systemctl --user daemon-reload
-    run systemctl --user enable --now daily-limits.timer
+    run systemctl --user enable --now daily-limits.timer daily-limits-focus.path
 }
 
 main() {
