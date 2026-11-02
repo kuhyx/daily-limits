@@ -1,5 +1,6 @@
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:daily_limits/services/sync_app.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fakes.dart';
@@ -11,6 +12,8 @@ void main() {
     installFakeSecureStorage();
     installPlatformFakes(tempDir());
   });
+
+  tearDown(() => debugDefaultTargetPlatformOverride = null);
 
   test('paths follow the Firebase contract', () {
     expect(kStatusPath, 'daily_limits/status.json');
@@ -24,9 +27,16 @@ void main() {
   });
 
   test('Google is offered only where it can work', () {
-    // The test host is Linux with no Desktop client configured: no button.
+    // Linux with no Desktop client configured: no button.
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     expect(kSignIn.googleAvailable, isFalse);
     expect(kSignIn.googleUnavailableReason, contains('Android only'));
+  });
+
+  test('Google is offered on Android through the AccountManager plugin', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    expect(kSignIn.googleAvailable, isTrue);
+    expect(kSignIn.googleUnavailableReason, isNull);
   });
 
   test('Google sign-in with no token yields no client', () async {
