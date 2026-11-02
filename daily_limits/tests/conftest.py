@@ -65,6 +65,7 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     runtime = tmp_path / "run"
     runtime.mkdir()
     monkeypatch.setattr(_paths, "HOME", home)
+    monkeypatch.setenv("FOCUS_PROJECT_DATA", str(tmp_path / "focus_project"))
     monkeypatch.setattr(_paths, "KEY_FILE", key)
     monkeypatch.setattr(_paths, "SCHEDULE_FILE", tmp_path / "shutdown-schedule.conf")
     monkeypatch.setattr(_paths, "PLAYTIME_STATE", tmp_path / "playtime_state.json")
