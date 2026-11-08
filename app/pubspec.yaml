@@ -39,7 +39,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.6.0
+      ref: sync_settings_ui-v0.6.1
       path: sync_settings_ui
   timezone: 0.11.2
   uuid: 4.6.0
