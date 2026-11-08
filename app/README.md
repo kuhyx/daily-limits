@@ -3,7 +3,7 @@
 Today's shutdown time and gaming budget on the phone, as published by the PC
 (`daily-limits --sync`), plus two requests the PC acts on: "Refresh now" and
 "Declare rest day" (tomorrow up to a year ahead). The PC enforces; the phone
-only displays and asks. `com.kuhy.daily_limits`, Flutter 3.47.7 (`.fvmrc`),
+only displays and asks. `com.kuhy.daily_limits`, Flutter 3.47.9 (`.fvmrc`),
 exact pins, Firebase RTDB only via crdt_sync_flutter (`kuhy-syncs`), no GitHub
 mirror.
 
@@ -61,7 +61,7 @@ The system `flutter` is older than `.fvmrc` and `phone_deploy.sh` ignores
 `.fvmrc`, so put the fvm SDK first:
 
 ```console
-PATH=~/sdk/fvm/versions/3.47.7/bin:$PATH bash ~/.claude/scripts/phone_deploy.sh \
+PATH=~/sdk/fvm/versions/3.47.9/bin:$PATH bash ~/.claude/scripts/phone_deploy.sh \
   ~/src/daily-limits/app --release --shot /tmp/daily-limits.png
 # probes: add --target lib/main_probe.dart (or main_probe_shutdown.dart)
 ```
@@ -98,7 +98,7 @@ Shared family hourglass (`python_pkg/app_icons` in testsAndMisc, key
 `daily_limits`). Regenerate (the system dart fails `dart run`):
 
 ```console
-PATH=~/sdk/fvm/versions/3.47.7/bin:$PATH PYTHONPATH=~/src/testsAndMisc \
+PATH=~/sdk/fvm/versions/3.47.9/bin:$PATH PYTHONPATH=~/src/testsAndMisc \
   python3 -m python_pkg.app_icons generate --app daily_limits --android
 ```
 
