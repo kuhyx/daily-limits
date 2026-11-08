@@ -16,7 +16,9 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.kuhy.daily_limits"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications 23 and flutter_secure_storage 11 publish AAR
+    // metadata demanding API 37; flutter.compileSdkVersion is 36 on 3.47.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

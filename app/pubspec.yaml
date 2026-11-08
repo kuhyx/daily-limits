@@ -13,23 +13,23 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.11.3
+      ref: crdt_sync_dart-v0.12.0
       path: crdt_sync_dart
   # Keystore-backed Firebase session, account store and per-install device id.
   crdt_sync_flutter:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_flutter-v0.4.0
+      ref: crdt_sync_flutter-v0.5.0
       path: crdt_sync_flutter
   # The shared palette, scales and theme. No local theme file to drift.
   design_system:
     git:
       url: https://github.com/kuhyx/utils
-      ref: design_system-v0.2.1
+      ref: design_system-v0.3.1
       path: design_system
   flutter:
     sdk: flutter
-  flutter_local_notifications: 22.3.2
+  flutter_local_notifications: 23.0.0
   home_widget: 0.10.0
   # The status cache lives in a JSON file under the app-support directory,
   # shared between the UI isolate and the workmanager isolate. Not
@@ -39,7 +39,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.4.3
+      ref: sync_settings_ui-v0.6.0
       path: sync_settings_ui
   timezone: 0.11.2
   uuid: 4.6.0
