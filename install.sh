@@ -49,8 +49,8 @@ install_package() {
     # covers all three (sickdays too): --no-deps only when none would be
     # installed by the pins.
     local deps=()
-    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync, sickdays' 2>/dev/null; then
-        log "earned_time, crdt_sync and sickdays already installed; keeping them (--no-deps)"
+    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync, sickdays, focus_project' 2>/dev/null; then
+        log "earned_time, crdt_sync, sickdays and focus_project already installed; keeping them (--no-deps)"
         deps=(--no-deps)
     fi
     run "$SYSTEM_PYTHON" -m pip install --user --break-system-packages -q \

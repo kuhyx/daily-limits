@@ -56,3 +56,36 @@ def test_a_failed_focus_launch_is_said_in_thepopup(
     root, _texts_drawn = popup(monkeypatch, _focus_report())
     clickable(root)[0].bindings["<Button-1>"](object())
     assert dict(texts(root))["could not open"] == tok.WARNING
+
+
+def _missed_report(*, missed: bool) -> _report.Report:
+    report = _focus_report()
+    report["focus"] = {"project": "p", "missed": missed, "milestones": []}
+    return report
+
+
+def test_a_missed_milestone_turns_every_focus_cell_red(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    root, _texts_drawn = popup(monkeypatch, _missed_report(missed=True))
+    cells = clickable(root)
+    assert len(cells) == 5
+    assert {str(w.options["fg"]) for w in cells} == {tok.DANGER}
+
+
+def test_no_missed_milestone_keeps_the_usual_colours(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    root, _texts_drawn = popup(monkeypatch, _missed_report(missed=False))
+    assert tok.DANGER not in {str(w.options["fg"]) for w in clickable(root)}
+
+
+def test_missed_does_not_redden_other_rows(
+    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+) -> None:
+    del roots
+    report = _missed_report(missed=True)
+    _root, drawn = popup(monkeypatch, report)
+    assert dict(drawn)["E0"] != tok.DANGER

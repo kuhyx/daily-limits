@@ -78,6 +78,12 @@ class Popup:
             label.bind("<Button-1>", self._open_focus)
         return label
 
+    @staticmethod
+    def _tint(report: Report, name: str, fg: str) -> str:
+        """``DANGER`` for the focus row while a milestone is missed, else ``fg``."""
+        missed = name == _FOCUS and report.get("focus", {}).get("missed") is True
+        return tok.DANGER if missed else fg
+
     def refresh(self) -> None:
         """Rebuild the report and redraw; reschedules itself."""
         for child in self._body.winfo_children():
@@ -148,7 +154,10 @@ class Popup:
                 (_STATUS_WORD[earner["status"]], colour, "label"),
             )
             for column, (text, fg, role) in enumerate(cells):
-                self._link(self._label(card, text, role, fg=fg), earner["name"]).grid(
+                tinted = self._tint(report, earner["name"], fg)
+                self._link(
+                    self._label(card, text, role, fg=tinted), earner["name"]
+                ).grid(
                     row=row, column=column, sticky="w", padx=(0, tok.MD), pady=tok.XS
                 )
 
@@ -169,7 +178,11 @@ class Popup:
                     f"{row['label']}  →  shutdown {row['shutdown_after']}"
                     + ("  (could not check)" if unknown else ""),
                     "body",
-                    fg=tok.MUTED_ON_DARK if unknown else tok.TEXT_ON_DARK,
+                    fg=self._tint(
+                        report,
+                        row["name"],
+                        tok.MUTED_ON_DARK if unknown else tok.TEXT_ON_DARK,
+                    ),
                 ),
                 row["name"],
             ).pack(anchor="w")
