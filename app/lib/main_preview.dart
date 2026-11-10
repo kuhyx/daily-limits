@@ -87,15 +87,15 @@ class _PreviewApp extends StatelessWidget {
     return MaterialApp(
       theme: buildDarkTheme(),
       home: Scaffold(
-        appBar: AppBar(title: const Text('Daily limits (preview)')),
+        appBar: AppBar(title: const Icon(Icons.preview)),
         body: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            Text('Widget: ${widgetLine(fresh, now)}'),
+            _WidgetLine(widgetLine(fresh, now)),
             const SizedBox(height: AppSpacing.md),
             StatusView(status: fresh, now: now),
             const SizedBox(height: AppSpacing.xl),
-            Text('Widget: ${widgetLine(stale, now)}'),
+            _WidgetLine(widgetLine(stale, now)),
             const SizedBox(height: AppSpacing.md),
             StatusView(status: stale, now: now),
           ],
@@ -103,4 +103,20 @@ class _PreviewApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The home-screen widget's line, behind a widget glyph.
+class _WidgetLine extends StatelessWidget {
+  const new(this.line);
+
+  final String line;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const Icon(Icons.widgets),
+      const SizedBox(width: AppSpacing.sm),
+      Expanded(child: Text(line)),
+    ],
+  );
 }

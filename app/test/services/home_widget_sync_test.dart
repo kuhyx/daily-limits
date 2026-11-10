@@ -19,16 +19,13 @@ void main() {
 
   group('widgetLine', () {
     test('shutdown, gaming left and what still extends', () {
-      expect(
-        widgetLine(status(), now),
-        '$kShutdownIcon 22:00 · 🎮 3h00 left · +💪',
-      );
+      expect(widgetLine(status(), now), '$kShutdownIcon 22:00 · 🎮 3h00 · +💪');
     });
 
     test('shows the budget when use is unknown, and no empty extend part', () {
       expect(
         widgetLine(status(used: null, todo: const []), now),
-        '$kShutdownIcon 22:00 · 🎮 5h00 budget',
+        '$kShutdownIcon 22:00 · 🎮 ?/5h00',
       );
     });
 
@@ -36,11 +33,11 @@ void main() {
       final stale = status(
         published: now.subtract(const Duration(minutes: 30)),
       );
-      expect(widgetLine(stale, now), endsWith('(offline)'));
+      expect(widgetLine(stale, now), endsWith(kWidgetOffline));
     });
 
     test('a placeholder before any status, and --:-- with none applied', () {
-      expect(widgetLine(null, now), 'Daily limits: no data yet');
+      expect(widgetLine(null, now), kWidgetNoData);
       final none = DailyStatus.parse(statusJson(published: now, applied: null));
       expect(widgetLine(none, now), startsWith('$kShutdownIcon --:--'));
     });

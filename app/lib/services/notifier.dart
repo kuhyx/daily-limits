@@ -5,9 +5,19 @@ library;
 import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/services/local_cache.dart';
 import 'package:daily_limits/services/requests.dart';
+import 'package:daily_limits/ui/earner_icons.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+/// The OS-level name: both channels carry only the app's proper noun.
+const String kAppName = 'Daily limits';
+
+/// Rest-day answer titles: beach + check / beach + no-entry, then the date.
+const String kRestDayDeclared = '🏖 ✅';
+
+/// See [kRestDayDeclared].
+const String kRestDayRefused = '🏖 ⛔';
 
 const int _shutdown30Id = 10;
 const int _shutdown10Id = 11;
@@ -17,17 +27,12 @@ const int _testId = 99;
 
 const _limits = AndroidNotificationDetails(
   'limits',
-  'Shutdown and gaming',
-  channelDescription: 'Shutdown approaching and gaming time running out',
+  kAppName,
   importance: Importance.high,
   priority: Priority.high,
 );
 
-const _answers = AndroidNotificationDetails(
-  'answers',
-  'PC answers',
-  channelDescription: 'Whether the PC accepted a rest day',
-);
+const _answers = AndroidNotificationDetails('answers', kAppName);
 
 final FlutterLocalNotificationsPlugin _plugin =
     FlutterLocalNotificationsPlugin();
@@ -81,8 +86,8 @@ Future<void> scheduleShutdownWarnings(DailyStatus? status) async {
       scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
       notificationDetails: const NotificationDetails(android: _limits),
       androidScheduleMode: mode,
-      title: '⏻ $minutes′',
-      body: 'Shutdown at ${status.applied}.',
+      title: '$kShutdownIcon ${status.applied}',
+      body: '⏳ ${compactMinutes(minutes)}',
     );
   }
 }
@@ -99,12 +104,8 @@ Future<void> maybeNotifyGaming(DailyStatus status, LocalCache cache) async {
   await initNotifications();
   await _plugin.show(
     id: _gamingId,
-    title: left > 0
-        ? 'Gaming: ${compactMinutes(left)} left'
-        : 'Gaming time used up',
-    body:
-        'Budget ${compactMinutes(status.budgetMinutes)} for '
-        '${status.gamingDay}.',
+    title: '🎮 ${compactMinutes(left)}',
+    body: '/${compactMinutes(status.budgetMinutes)} · ${status.gamingDay}',
     notificationDetails: const NotificationDetails(android: _limits),
   );
   cache.gamingNotifiedDay = status.gamingDay;
@@ -117,10 +118,7 @@ Future<void> notifyRestDayResult(SentRequest request) async {
   await initNotifications();
   await _plugin.show(
     id: _restDayId,
-    title: result.ok
-        ? 'Rest day declared: ${request.date}'
-        : 'Rest day refused: ${request.date}',
-    body: result.message,
+    title: '${result.ok ? kRestDayDeclared : kRestDayRefused} ${request.date}',
     notificationDetails: const NotificationDetails(android: _answers),
   );
 }
@@ -131,7 +129,7 @@ Future<void> showTestNotification() async {
   await _plugin.show(
     id: _testId,
     title: '🔔',
-    body: 'Notifications from this app reach you.',
+    body: '✅',
     notificationDetails: const NotificationDetails(android: _limits),
   );
 }

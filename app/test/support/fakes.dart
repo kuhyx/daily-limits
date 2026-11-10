@@ -148,6 +148,20 @@ class PluginLog {
     for (final c in named(method)) (c.arguments as Map)['title'] as String,
   ];
 
+  /// Bodies of everything `show`n or `zonedSchedule`d ('' for none).
+  List<String> bodies(String method) => [
+    for (final c in named(method))
+      ((c.arguments as Map)['body'] as String?) ?? '',
+  ];
+
+  /// Channel name and description of everything `show`n or scheduled.
+  List<String> channelTexts(String method) => [
+    for (final c in named(method))
+      for (final key in ['channelName', 'channelDescription'])
+        (((c.arguments as Map)['platformSpecifics'] as Map)[key] as String?) ??
+            '',
+  ];
+
   /// What the widget was last given for [key].
   Object? widgetData(String key) {
     for (final c in named('saveWidgetData').reversed) {

@@ -3,7 +3,8 @@
 library;
 
 import 'package:daily_limits/model/status.dart';
-import 'package:daily_limits/ui/earner_icons.dart';
+import 'package:daily_limits/screens/status_cards.dart';
+import 'package:daily_limits/screens/status_parts.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -24,30 +25,36 @@ class StatusView extends StatelessWidget {
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ShutdownCard(status: status),
+        ShutdownCard(status: status),
         const SizedBox(height: AppSpacing.md),
-        _GamingCard(status: status, today: isoDay(now)),
+        GamingCard(status: status, today: isoDay(now)),
         if (status.todo.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
-          _ExtendLine(todo: status.todo),
+          ExtendLine(todo: status.todo),
         ],
         const SizedBox(height: AppSpacing.md),
-        _EarnersCard(earners: status.earners),
+        EarnersCard(earners: status.earners),
       ],
     );
     if (!offline) return body;
     final theme = Theme.of(context);
+    final since = hhmm(status.publishedAt);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Card(
+          key: const Key('status-offline'),
           color: theme.colorScheme.surfaceContainerHighest,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Text(
-              'PC offline since ${hhmm(status.publishedAt)} — '
-              'showing the last values it published.',
-              style: theme.textTheme.bodyLarge,
+            // Desktop with a slash + the last publish time: the PC is off and
+            // the cards below are its last values.
+            child: GlyphValue(
+              icon: Icons.desktop_access_disabled,
+              value: since,
+              spoken:
+                  'PC offline since $since, showing the last values '
+                  'it published',
             ),
           ),
         ),
@@ -71,200 +78,3 @@ const List<double> _greyscale = [
   0.2126, 0.7152, 0.0722, 0, 0, //
   0, 0, 0, 1, 0, //
 ];
-
-class _ShutdownCard extends StatelessWidget {
-  const new({required this.status});
-
-  final DailyStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final resolved = status.resolved;
-    return _Section(
-      title: '',
-      leading: const Icon(Icons.power_settings_new, semanticLabel: 'Shutdown'),
-      children: [
-        Text(
-          '$kShutdownIcon ${status.applied ?? 'none applied'}',
-          style: theme.textTheme.headlineMedium,
-        ),
-        if (resolved != null && resolved != status.applied)
-          Text(
-            'Registry resolves to $resolved',
-            style: theme.textTheme.bodyLarge,
-          ),
-        Text(
-          'Floor ${status.floor ?? '?'} → ceiling ${status.ceiling ?? '?'}',
-          style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-        ),
-      ],
-    );
-  }
-}
-
-class _GamingCard extends StatelessWidget {
-  const new({required this.status, required this.today});
-
-  final DailyStatus status;
-  final String today;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final left = status.leftMinutes;
-    final used = status.usedMinutes;
-    return _Section(
-      title: status.gamingDay == today
-          ? 'Gaming'
-          : 'Gaming (day ${status.gamingDay})',
-      children: [
-        Text(
-          left == null ? '🎮 ? left' : '🎮 ${compactMinutes(left)} left',
-          style: theme.textTheme.headlineMedium,
-        ),
-        Text(
-          used == null
-              ? 'Used: could not check · budget '
-                    '${compactMinutes(status.budgetMinutes)}'
-              : 'Used ${compactMinutes(used)} of '
-                    '${compactMinutes(status.budgetMinutes)}',
-          style: theme.textTheme.bodyLarge,
-        ),
-        Text(
-          'Ceiling ${compactMinutes(status.ceilingMinutes)}',
-          style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-        ),
-      ],
-    );
-  }
-}
-
-class _ExtendLine extends StatelessWidget {
-  const new({required this.todo});
-
-  final List<TodoItem> todo;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [for (final t in todo) _extendItem(t)];
-    return _Section(
-      title: '',
-      leading: const Icon(Icons.more_time, semanticLabel: 'To extend'),
-      children: [
-        Text(items.join(', '), style: Theme.of(context).textTheme.bodyLarge),
-      ],
-    );
-  }
-}
-
-class _EarnersCard extends StatelessWidget {
-  const new({required this.earners});
-
-  final List<EarnerState> earners;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.statusColors;
-    return _Section(
-      title: '',
-      leading: const Icon(Icons.emoji_events, semanticLabel: 'Earners'),
-      children: [
-        if (earners.isEmpty)
-          Icon(
-            Icons.remove,
-            color: theme.colorScheme.outline,
-            semanticLabel: 'None',
-          ),
-        for (final e in earners)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: AppSpacing.xl,
-                  child: Text(
-                    earnerIcon(e.name),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                Expanded(
-                  child: Text(e.label, style: theme.textTheme.bodyLarge),
-                ),
-                Text(
-                  switch (e.status) {
-                    'done' => 'done',
-                    'todo' => 'to do',
-                    _ => 'could not check',
-                  },
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: switch (e.status) {
-                      'done' => colors.success,
-                      'todo' => theme.colorScheme.onSurface,
-                      _ => colors.warning,
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const new({required this.title, required this.children, this.leading});
-
-  final String title;
-  final List<Widget> children;
-  final Widget? leading;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (title.isNotEmpty)
-              Text(
-                title,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            if (leading != null) ...[
-              if (title.isNotEmpty) const SizedBox(height: AppSpacing.sm),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  leading!,
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: children,
-                    ),
-                  ),
-                ],
-              ),
-            ] else
-              ...children,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// `💪 Workout → 20:50`, marked `(?)` when the PC could not check it.
-String _extendItem(TodoItem t) {
-  final mark = t.status == 'unknown' ? ' (?)' : '';
-  return '${earnerIcon(t.name)} ${t.label} → ${t.shutdownAfter}$mark';
-}

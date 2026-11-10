@@ -2,6 +2,7 @@ import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/services/local_cache.dart';
 import 'package:daily_limits/services/notifier.dart';
 import 'package:daily_limits/services/requests.dart';
+import 'package:daily_limits/ui/earner_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fakes.dart';
@@ -52,7 +53,12 @@ void main() {
     test('schedules both warnings, exact when allowed', () async {
       await scheduleShutdownWarnings(status(applied: inMinutes(60)));
       expect(log.named('cancel'), hasLength(2));
-      expect(log.titles('zonedSchedule'), ['⏻ 30′', '⏻ 10′']);
+      final at = inMinutes(60);
+      expect(log.titles('zonedSchedule'), [
+        '$kShutdownIcon $at',
+        '$kShutdownIcon $at',
+      ]);
+      expect(log.bodies('zonedSchedule'), ['⏳ 30m', '⏳ 10m']);
       final mode = scheduleMode(log);
       expect(mode, 'exactAllowWhileIdle');
     });
@@ -66,7 +72,7 @@ void main() {
 
     test('skips a warning whose time has passed', () async {
       await scheduleShutdownWarnings(status(applied: inMinutes(20)));
-      expect(log.titles('zonedSchedule'), ['⏻ 10′']);
+      expect(log.bodies('zonedSchedule'), ['⏳ 10m']);
     });
 
     test(
@@ -87,13 +93,14 @@ void main() {
       final s = status(used: 290);
       await maybeNotifyGaming(s, cache);
       await maybeNotifyGaming(s, cache);
-      expect(log.titles('show'), ['Gaming: 10m left']);
+      expect(log.titles('show'), ['🎮 10m']);
+      expect(log.bodies('show'), ['/5h00 · ${s.gamingDay}']);
       expect(cache.gamingNotifiedDay, s.gamingDay);
     });
 
-    test('says "used up" at zero', () async {
+    test('shows 0m at zero', () async {
       await maybeNotifyGaming(status(used: 300), LocalCache());
-      expect(log.titles('show'), ['Gaming time used up']);
+      expect(log.titles('show'), ['🎮 0m']);
     });
 
     test('stays quiet with time left, unknown use or a stale status', () async {
@@ -129,9 +136,10 @@ void main() {
         restDay(const RequestResult(ok: false, message: 'refused: past')),
       );
       expect(log.titles('show'), [
-        'Rest day declared: 2026-10-10',
-        'Rest day refused: 2026-10-10',
+        '$kRestDayDeclared 2026-10-10',
+        '$kRestDayRefused 2026-10-10',
       ]);
+      expect(log.bodies('show'), ['', '']);
     });
 
     test('does nothing without an answer', () async {
@@ -143,5 +151,6 @@ void main() {
   test('showTestNotification posts the test notification', () async {
     await showTestNotification();
     expect(log.titles('show'), ['🔔']);
+    expect(log.channelTexts('show'), [kAppName, '']);
   });
 }

@@ -21,6 +21,9 @@ void main() {
     await tester.pumpWidget(MaterialApp(theme: buildDarkTheme(), home: home));
   }
 
+  String? errorLabel(WidgetTester tester) =>
+      tester.widget<Icon>(find.byKey(const Key('home-error'))).semanticLabel;
+
   testWidgets('starts the controller and shows a spinner while loading', (
     tester,
   ) async {
@@ -50,7 +53,8 @@ void main() {
     expect(find.byKey(const Key('home-empty')), findsOneWidget);
     expect(find.byKey(const Key('home-signed-out')), findsNothing);
     // Empty footer: nothing about publish or read times.
-    expect(find.textContaining('read '), findsNothing);
+    expect(find.byIcon(Icons.download), findsNothing);
+    expect(find.byIcon(Icons.upload), findsNothing);
   });
 
   testWidgets('unreadable status shows the error, not "nothing yet"', (
@@ -60,7 +64,7 @@ void main() {
       emptyOutcome(parseError: 'Unreadable status from the PC: boom'),
     );
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.text('Unreadable status from the PC: boom'), findsOneWidget);
+    expect(errorLabel(tester), 'Unreadable status from the PC: boom');
     expect(find.byKey(const Key('home-empty')), findsNothing);
   });
 
@@ -69,7 +73,7 @@ void main() {
       emptyOutcome(lastError: 'Could not reach Firebase: offline'),
     );
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.text('Could not reach Firebase: offline'), findsOneWidget);
+    expect(errorLabel(tester), 'Could not reach Firebase: offline');
   });
 
   testWidgets('status present: view, actions and footer with both times', (
@@ -84,17 +88,18 @@ void main() {
     expect(find.byType(StatusView), findsOneWidget);
     expect(find.byType(ActionsCard), findsOneWidget);
     expect(find.byKey(const Key('home-empty')), findsNothing);
-    expect(
-      find.text('Published ${hhmm(published)} · read ${hhmm(fetched)}'),
-      findsOneWidget,
-    );
+    expect(find.byIcon(Icons.upload), findsOneWidget);
+    expect(find.byIcon(Icons.download), findsOneWidget);
+    expect(find.bySemanticsLabel('Published ${hhmm(published)}'), findsOne);
+    expect(find.bySemanticsLabel('read ${hhmm(fetched)}'), findsOneWidget);
   });
 
   testWidgets('footer with only a read time', (tester) async {
     final fetched = DateTime.now();
     final controller = FakeController(outcomeReadOnly(fetched));
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.text('read ${hhmm(fetched)}'), findsOneWidget);
+    expect(find.byIcon(Icons.upload), findsNothing);
+    expect(find.bySemanticsLabel('read ${hhmm(fetched)}'), findsOneWidget);
   });
 
   testWidgets('pull to refresh calls refresh', (tester) async {

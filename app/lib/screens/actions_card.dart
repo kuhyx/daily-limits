@@ -1,6 +1,7 @@
-/// "Refresh now" and "Declare rest day", with each request's state:
-/// waiting, the PC's answer, or "no answer yet" after 3 minutes -- which an
-/// answer arriving later still replaces.
+/// "Refresh now" and "Declare rest day" as icon buttons, with each request's
+/// state as a glyph: spinner while waiting, check or block for the PC's
+/// answer, a clock for "no answer yet" after 3 minutes -- which an answer
+/// arriving later still replaces.
 library;
 
 import 'package:daily_limits/services/limits_controller.dart';
@@ -27,7 +28,9 @@ class ActionsCard extends StatelessWidget {
       initialDate: tomorrow,
       firstDate: tomorrow,
       lastDate: tomorrow.add(const Duration(days: 365)),
-      helpText: 'Rest day (future dates only)',
+      // Blank header instead of our own caption; the picker's own framework
+      // text is a follow-up (custom icon picker), per textgate decision 5.
+      helpText: '',
     );
     if (day != null) await controller.declareRestDay(day);
   }
@@ -66,10 +69,11 @@ class ActionsCard extends StatelessWidget {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: Text(
-                  error,
-                  style: Theme.of(context).textTheme.bodyLarge
-                      ?.copyWith(color: Theme.of(context).colorScheme.error),
+                child: Icon(
+                  Icons.error_outline,
+                  key: const Key('action-error'),
+                  color: Theme.of(context).colorScheme.error,
+                  semanticLabel: error,
                 ),
               ),
           ],
@@ -92,40 +96,53 @@ class _RequestLine extends StatelessWidget {
         ? 'Rest day ${request.date}'
         : 'Refresh';
     final result = request.result;
-    final (text, color) = switch ((result, request.timedOut)) {
+    // Glyph + colour per state; the old sentence (with the PC's message) is
+    // spoken only. A pending request also spins.
+    final (icon, color, spoken) = switch ((result, request.timedOut)) {
       (null, true) => (
-        '$what: no answer yet (PC may be off); it will show here when it does',
+        Icons.schedule,
         colors.warning,
+        '$what: no answer yet (PC may be off)',
       ),
-      (null, false) => ('$what: waiting for the PC…', null),
+      (null, false) => (null, null, '$what: waiting for the PC'),
       (final r?, _) when r.ok => (
-        '$what: ${_or(r.message, 'done')}',
+        Icons.check_circle,
         colors.success,
+        '$what: ${_or(r.message, 'done')}',
       ),
       (final r?, _) => (
-        '$what refused: ${_or(_withoutVerdict(r.message), 'no reason')}',
+        Icons.block,
         colors.danger,
+        '$what refused: ${_or(_withoutVerdict(r.message), 'no reason')}',
       ),
     };
+    final date = request.date;
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm),
-      child: Row(
-        children: [
-          if (request.isPending)
-            const Padding(
-              padding: EdgeInsets.only(right: AppSpacing.sm),
-              child: SizedBox.square(
-                dimension: AppSpacing.md,
-                child: CircularProgressIndicator(strokeWidth: 2),
+      child: MergeSemantics(
+        child: Row(
+          key: Key('request-${request.kind.wire}'),
+          children: [
+            if (request.isPending)
+              Semantics(
+                label: spoken,
+                child: const SizedBox.square(
+                  dimension: AppSpacing.md,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
-            ),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyLarge?.copyWith(color: color),
-            ),
-          ),
-        ],
+            if (icon != null) Icon(icon, color: color, semanticLabel: spoken),
+            if (date != null) ...[
+              const SizedBox(width: AppSpacing.sm),
+              ExcludeSemantics(
+                child: Text(
+                  date,
+                  style: theme.textTheme.bodyLarge?.copyWith(color: color),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

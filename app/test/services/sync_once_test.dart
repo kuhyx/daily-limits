@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:daily_limits/services/local_cache.dart';
+import 'package:daily_limits/services/notifier.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_app.dart';
 import 'package:daily_limits/services/sync_once.dart';
@@ -50,7 +51,7 @@ void main() {
     expect(out.cache.fetchedAt, isNotNull);
     expect(out.cache.lastError, isNull);
     expect(store.closed, 1);
-    expect(log.titles('show'), ['Gaming: 5m left']);
+    expect(log.titles('show'), ['🎮 5m']);
     expect(log.named('updateWidget'), hasLength(1));
     expect((await LocalCache.load()).statusText, isNotNull);
   });
@@ -98,7 +99,7 @@ void main() {
       });
       expect(await collectAnswers(store, cache), isTrue);
       expect(cache.requests.every((r) => !r.isPending), isTrue);
-      expect(log.titles('show'), ['Rest day refused: 2026-10-10']);
+      expect(log.titles('show'), ['$kRestDayRefused 2026-10-10']);
     });
 
     test('times out old requests, retries failed and young ones', () async {
@@ -130,7 +131,7 @@ void main() {
       final settled = cache.requests.single;
       expect(settled.isAnswered, isTrue);
       expect(settled.result!.message, 'declared');
-      expect(log.titles('show'), ['Rest day declared: 2026-10-10']);
+      expect(log.titles('show'), ['$kRestDayDeclared 2026-10-10']);
     });
 
     test('a timed-out request with no answer stays as it is', () async {

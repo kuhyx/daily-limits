@@ -122,10 +122,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (status != null) StatusView(status: status, now: now),
       if (error != null) ...[
         const SizedBox(height: AppSpacing.md),
-        Text(
-          error,
-          style: Theme.of(context).textTheme.bodyLarge
-              ?.copyWith(color: Theme.of(context).colorScheme.error),
+        Icon(
+          Icons.error_outline,
+          key: const Key('home-error'),
+          color: Theme.of(context).colorScheme.error,
+          semanticLabel: error,
         ),
       ],
       const SizedBox(height: AppSpacing.md),
@@ -147,17 +148,29 @@ class _Footer extends StatelessWidget {
     final theme = Theme.of(context);
     final fetched = outcome.cache.fetchedAt;
     final published = status?.publishedAt;
-    final parts = [
-      if (published != null) 'Published ${hhmm(published)}',
-      if (fetched != null) 'read ${hhmm(fetched)}',
-    ];
-    if (parts.isEmpty) return const SizedBox.shrink();
-    return Text(
-      parts.join(' · '),
-      textAlign: TextAlign.center,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
+    if (published == null && fetched == null) return const SizedBox.shrink();
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final style = theme.textTheme.bodySmall?.copyWith(color: muted);
+    // Upload = when the PC published, download = when this phone read it.
+    Widget stamp(IconData icon, DateTime at, String spoken) => MergeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: muted, semanticLabel: spoken),
+          const SizedBox(width: AppSpacing.xs),
+          ExcludeSemantics(child: Text(hhmm(at), style: style)),
+        ],
       ),
+    );
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: AppSpacing.md,
+      children: [
+        if (published != null)
+          stamp(Icons.upload, published, 'Published ${hhmm(published)}'),
+        if (fetched != null)
+          stamp(Icons.download, fetched, 'read ${hhmm(fetched)}'),
+      ],
     );
   }
 }

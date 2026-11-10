@@ -19,7 +19,7 @@ class DailyLimitsWidget : HomeWidgetProvider() {
         appWidgetIds: IntArray,
         widgetData: SharedPreferences,
     ) {
-        val line = widgetData.getString("line", null) ?: "Daily limits: open the app"
+        val line = widgetData.getString("line", null) ?: "⏳" // kWidgetNoData in home_widget_sync.dart
         val offline = widgetData.getBoolean("offline", true)
         // text-on-dark / muted-on-dark from the unified tokens.
         val color = if (offline) 0xFFAAA09A.toInt() else 0xFFECEAE9.toInt()

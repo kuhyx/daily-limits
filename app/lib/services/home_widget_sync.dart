@@ -1,4 +1,4 @@
-/// The one-line home-screen widget: `🔌 20:00 · 🎮 1h29 left · +💪 +🧩`.
+/// The one-line home-screen widget: `🔌 20:00 · 🎮 1h29 · +💪 +🧩`.
 ///
 /// The Kotlin side (`DailyLimitsWidget.kt`) only renders what is saved here:
 /// the line and whether to grey it out.
@@ -11,9 +11,16 @@ import 'package:home_widget/home_widget.dart';
 /// Fully-qualified Android provider class.
 const String kWidgetProvider = 'com.kuhy.daily_limits.DailyLimitsWidget';
 
-/// The widget line for [status]; a placeholder when there is none.
+/// The widget line before the PC has published anything (also the Kotlin
+/// fallback before the first save).
+const String kWidgetNoData = '⏳';
+
+/// Appended when the PC is offline; the Kotlin side also greys the line.
+const String kWidgetOffline = '💤';
+
+/// The widget line for [status]; [kWidgetNoData] when there is none.
 String widgetLine(DailyStatus? status, DateTime now) {
-  if (status == null) return 'Daily limits: no data yet';
+  if (status == null) return kWidgetNoData;
   final parts = <String>[
     '$kShutdownIcon ${status.applied ?? '--:--'}',
     _gamingPart(status),
@@ -21,14 +28,15 @@ String widgetLine(DailyStatus? status, DateTime now) {
   final extend = [for (final t in status.todo) '+${earnerIcon(t.name)}'];
   if (extend.isNotEmpty) parts.add(extend.join(' '));
   final line = parts.join(' · ');
-  return status.isOffline(now) ? '$line (offline)' : line;
+  return status.isOffline(now) ? '$line $kWidgetOffline' : line;
 }
 
+/// `🎮 1h29` left, or `🎮 ?/5h00` (use unknown, budget) when not checked.
 String _gamingPart(DailyStatus status) {
   final left = status.leftMinutes;
   return left == null
-      ? '🎮 ${compactMinutes(status.budgetMinutes)} budget'
-      : '🎮 ${compactMinutes(left)} left';
+      ? '🎮 ?/${compactMinutes(status.budgetMinutes)}'
+      : '🎮 ${compactMinutes(left)}';
 }
 
 /// Saves the line for [status] and asks the launcher to redraw.

@@ -61,7 +61,8 @@ void main() {
     await pump(tester);
     expect(enabled(tester, 'Refresh now'), isTrue);
     expect(enabled(tester, 'Declare rest day'), isTrue);
-    expect(find.textContaining('waiting'), findsNothing);
+    expect(find.byKey(const Key('request-refresh')), findsNothing);
+    expect(find.byKey(const Key('request-rest_day')), findsNothing);
   });
 
   testWidgets('signed out: both buttons disabled', (tester) async {
@@ -74,7 +75,10 @@ void main() {
     await pump(tester, requests: [request()]);
     expect(enabled(tester, 'Refresh now'), isFalse);
     expect(enabled(tester, 'Declare rest day'), isTrue);
-    expect(find.text('Refresh: waiting for the PC…'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Refresh: waiting for the PC'),
+      findsOneWidget,
+    );
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     await pump(
@@ -83,7 +87,11 @@ void main() {
     );
     expect(enabled(tester, 'Refresh now'), isTrue);
     expect(enabled(tester, 'Declare rest day'), isFalse);
-    expect(find.text('Rest day 2026-10-10: waiting for the PC…'), findsOne);
+    expect(
+      find.bySemanticsLabel('Rest day 2026-10-10: waiting for the PC'),
+      findsOne,
+    );
+    expect(find.text('2026-10-10'), findsOneWidget);
   });
 
   testWidgets('timed out request says no answer yet and re-enables', (
@@ -97,16 +105,12 @@ void main() {
       ],
     );
     expect(
-      find.text(
-        'Refresh: no answer yet (PC may be off); it will show here when it '
-        'does',
-      ),
+      find.bySemanticsLabel('Refresh: no answer yet (PC may be off)'),
       findsOneWidget,
     );
     expect(
-      find.text(
-        'Rest day 2026-10-10: no answer yet (PC may be off); it will show '
-        'here when it does',
+      find.bySemanticsLabel(
+        'Rest day 2026-10-10: no answer yet (PC may be off)',
       ),
       findsOneWidget,
     );
@@ -121,8 +125,8 @@ void main() {
     final late = request(timedOut: true)
         .settle(result: const RequestResult(ok: true, message: 'republished'));
     await pump(tester, requests: [late]);
-    expect(find.text('Refresh: republished'), findsOneWidget);
-    expect(find.textContaining('no answer yet'), findsNothing);
+    expect(find.bySemanticsLabel('Refresh: republished'), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsNothing);
   });
 
   testWidgets('ok result shows the message, or "done" when empty', (
@@ -134,12 +138,13 @@ void main() {
         request(result: const RequestResult(ok: true, message: 'published')),
       ],
     );
-    expect(find.text('Refresh: published'), findsOneWidget);
+    expect(find.bySemanticsLabel('Refresh: published'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
     await pump(
       tester,
       requests: [request(result: const RequestResult(ok: true, message: ''))],
     );
-    expect(find.text('Refresh: done'), findsOneWidget);
+    expect(find.bySemanticsLabel('Refresh: done'), findsOneWidget);
   });
 
   testWidgets('refused result strips "refused: " and falls back', (
@@ -159,7 +164,7 @@ void main() {
       ],
     );
     expect(
-      find.text('Rest day 2026-10-12 refused: too many rest days'),
+      find.bySemanticsLabel('Rest day 2026-10-12 refused: too many rest days'),
       findsOneWidget,
     );
     await pump(
@@ -168,12 +173,14 @@ void main() {
         request(result: const RequestResult(ok: false, message: 'refused:')),
       ],
     );
-    expect(find.text('Refresh refused: no reason'), findsOneWidget);
+    expect(find.bySemanticsLabel('Refresh refused: no reason'), findsOneWidget);
+    expect(find.byIcon(Icons.block), findsOneWidget);
   });
 
   testWidgets('shows the action error', (tester) async {
     await pump(tester, actionError: 'Sign in first (Settings).');
-    expect(find.text('Sign in first (Settings).'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byKey(const Key('action-error')));
+    expect(icon.semanticLabel, 'Sign in first (Settings).');
   });
 
   testWidgets('Refresh now calls requestRefresh', (tester) async {
@@ -187,7 +194,7 @@ void main() {
     final controller = await pump(tester);
     await tester.tap(find.byKey(const Key('action-rest')));
     await tester.pumpAndSettle();
-    expect(find.text('Rest day (future dates only)'), findsOneWidget);
+    expect(find.byType(DatePickerDialog), findsOneWidget);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     final now = DateTime.now();
