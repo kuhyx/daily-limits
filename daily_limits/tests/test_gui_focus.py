@@ -48,14 +48,17 @@ def test_other_rows_are_notclickable(
     assert clickable(root) == []
 
 
-def test_a_failed_focus_launch_is_said_in_thepopup(
-    monkeypatch: pytest.MonkeyPatch, roots: list[FakeWidget]
+def test_a_failed_focus_launch_warns_in_thepopup(
+    monkeypatch: pytest.MonkeyPatch,
+    roots: list[FakeWidget],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     del roots
     monkeypatch.setattr("daily_limits._focus_open.launch", lambda: "could not open")
     root, _texts_drawn = popup(monkeypatch, _focus_report())
     clickable(root)[0].bindings["<Button-1>"](object())
-    assert dict(texts(root))["could not open"] == tok.WARNING
+    assert dict(texts(root))["⚠"] == tok.WARNING
+    assert "could not open" in caplog.text
 
 
 def _missed_report(*, missed: bool) -> _report.Report:
@@ -88,4 +91,6 @@ def test_missed_does_not_redden_other_rows(
     del roots
     report = _missed_report(missed=True)
     _root, drawn = popup(monkeypatch, report)
-    assert dict(drawn)["E0"] != tok.DANGER
+    others = [fg for text, fg in drawn if text == "•"]
+    assert others
+    assert tok.DANGER not in others

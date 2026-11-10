@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 _logger: Final = logging.getLogger(__name__)
 _REFRESH_MS: Final = 5_000
+# Leisure (sun) + blocked (no-entry): plain symbols, Tk 8.6 has no colour emoji.
+SPLASH_HEAD: Final = "☼ ⊘"
 Monitor = tuple[int, int, int, int]  # width, height, x, y
 # `` 0: +*DP-0 3840/620x2160/340+0+0  DP-0`` from ``xrandr --listmonitors``.
 _MONITOR: Final = re.compile(
@@ -77,22 +79,27 @@ def geometry(area: Monitor) -> str:
 
 
 def lines(facts: Facts | None) -> list[str]:
-    """What Phase 2 would kill or block right now, one line each."""
+    """What Phase 2 would kill or block right now, one line each.
+
+    Text-free (textgate), plain symbols only (Tk 8.6 cannot draw colour
+    emoji): ``?`` leisure-watch silent (fail closed: everything would count),
+    ``⏸ <pauser>`` paused, ``○`` nothing counting, ``⊘ <label>`` a domain
+    that would be blocked (redirected), ``✕ <label> <pid>`` a process that
+    would be killed. Labels and pauser names are leisure-watch's content.
+    """
     if facts is None:
-        return ["leisure-watch is silent: every focused app would count (fail closed)"]
+        return ["?"]
     if facts.state == "paused":
-        return [f"Nothing right now: paused by {facts.paused_by}"]
+        return [f"⏸ {facts.paused_by}"]
     if not facts.reasons:
-        return ["Nothing is counting right now"]
+        return ["○"]
     shown: list[str] = []
     for reason in facts.reasons:
         if reason.key.startswith("domain:"):
-            shown.append(
-                f"Block  {reason.label} (redirect to the 'leisure spent' page)"
-            )
+            shown.append(f"⊘ {reason.label}")
         else:
-            pid = "" if reason.pid is None else f" (pid {reason.pid})"
-            shown.append(f"Kill   {reason.label}{pid}")
+            pid = "" if reason.pid is None else f" {reason.pid}"
+            shown.append(f"✕ {reason.label}{pid}")
     return shown
 
 
@@ -165,25 +172,17 @@ class Splash:
         for child in self._body.winfo_children():
             child.destroy()
         used, budget = shadow["used_minutes"] or 0, shadow["budget_minutes"] or 0
+        # Sun (leisure) + no-entry in danger red: leisure would be blocked
+        # now. Then hourglass used / budget, then what would be killed or
+        # blocked. Click-to-dismiss is not captioned (textgate).
+        self._line(SPLASH_HEAD, "display", tok.DANGER, bold=True)
         self._line(
-            "🛋 SHADOW: LEISURE WOULD BE BLOCKED NOW", "display", tok.DANGER, bold=True
-        )
-        self._line(
-            f"{_render.duration(used)} used of {_render.duration(budget)}"
-            " · shadow week: nothing is blocked yet",
+            f"⧗ {_render.duration(used)} / {_render.duration(budget)}",
             "subtitle",
             tok.TEXT_ON_DARK,
         )
-        self._line(
-            "From the switch-on day, at 0 this would:", "body", tok.MUTED_ON_DARK
-        )
         for text in lines(_leisure_now.read()):
             self._line(text, "title", tok.WARNING, bold=True)
-        self._line(
-            "Click anywhere to dismiss · shown again every 15 min while over",
-            "caption",
-            tok.MUTED_ON_DARK,
-        )
         self._root.lift()
         self._root.after(_REFRESH_MS, self.refresh)
 

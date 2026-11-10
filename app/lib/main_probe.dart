@@ -27,7 +27,7 @@ Future<void> main() async {
   final controller = LimitsController();
   runApp(
     MaterialApp(
-      title: 'Daily limits (probe)',
+      title: kAppName,
       theme: buildDarkTheme(),
       home: HomeScreen(controller: controller),
     ),

@@ -46,12 +46,17 @@ _TIMEOUT_S = 10.0
 
 
 def counting_now(facts: Facts | None) -> str:
-    """What leisure-watch says is counting right now, for a human."""
+    """What leisure-watch says is counting right now, as glyphs + its labels.
+
+    Text-free (textgate): ``❓`` when leisure-watch is silent (fail closed:
+    everything would count), ``⏸ <pauser>`` when paused, ``∅`` when nothing
+    counts, else the reasons' own labels (leisure-watch's content).
+    """
     if facts is None:
-        return "unknown — leisure-watch is silent, so everything would count"
+        return "❓"
     if facts.state == "paused":
-        return f"nothing (paused by {facts.paused_by})"
-    return ", ".join(reason.label for reason in facts.reasons) or "nothing"
+        return f"⏸ {facts.paused_by}"
+    return ", ".join(reason.label for reason in facts.reasons) or "∅"
 
 
 def _run(name: str, argv: list[str]) -> int | None:
@@ -71,11 +76,10 @@ def _run(name: str, argv: list[str]) -> int | None:
 
 
 def _notify(left: int, facts: Facts | None) -> bool:
-    title = f"🛋 SHADOW: {left} min of leisure left"
-    body = (
-        "Shadow week: nothing is blocked yet; at 0 this would block.\n"
-        f"Counting now: {counting_now(facts)}"
-    )
+    # Couch + minutes left, ghost = shadow week (nothing blocked yet); the
+    # body is what counts now (stopwatch + counting_now).
+    title = f"🛋 {left}m 👻"
+    body = f"⏱ {counting_now(facts)}"
     argv = ["-u", "critical", "-a", "daily-limits", title, body]
     if _run(_paths.NOTIFY_SEND, argv) == 0:
         return True

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
 from typing import TYPE_CHECKING
 
@@ -101,18 +102,22 @@ def test_each_threshold_fires_once_per_day(fakes: Fakes) -> None:
     sent = fakes.calls("notify-send")
     assert len(sent) == 4
     # A jump from 25 straight to 8 says 10, once, and marks 10 done too.
-    assert [line.split(" ")[7] for line in sent] == ["60", "30", "10", "5"]
+    assert [line.split(" ")[6] for line in sent] == ["60m", "30m", "10m", "5m"]
     assert state() == {"day": "2026-10-19", "notified": [5, 10, 30, 60]}
     assert fakes.calls("systemd-run") == []
 
 
-def test_the_notification_says_shadow_and_what_counts(fakes: Fakes) -> None:
+def test_the_notification_shows_minutes_and_what_counts(fakes: Fakes) -> None:
     _alerts.tick(shadow(30), COUNTING, now=T0)
     (line,) = fakes.calls("notify-send")
     assert line.startswith("notify-send -u critical -a daily-limits ")
-    assert "SHADOW: 30 min of leisure left" in line
-    assert "nothing is blocked yet" in line
-    assert "Counting now: Film — mpv, YouTube — Helium" in line
+    assert line.endswith(" 🛋 30m 👻 ⏱ Film — mpv, YouTube — Helium")
+    # Text-free: once the content labels (leisure-watch's) are gone, the
+    # toast carries no word.
+    chrome = line.removeprefix("notify-send -u critical -a daily-limits ")
+    for label in (MPV.label, YT.label):
+        chrome = chrome.replace(label, "")
+    assert not re.search(r"[A-Za-z]{2,}", chrome), chrome
 
 
 def test_a_new_gaming_day_starts_over(fakes: Fakes) -> None:
@@ -225,12 +230,12 @@ def test_a_hung_helper_times_out(
     ("facts", "text"),
     [
         (COUNTING, "Film — mpv, YouTube — Helium"),
-        (None, "unknown — leisure-watch is silent, so everything would count"),
+        (None, "❓"),
         (
             _leisure_now.Facts(state="paused", paused_by="i3lock", reasons=()),
-            "nothing (paused by i3lock)",
+            "⏸ i3lock",
         ),
-        (_leisure_now.Facts(state="free", paused_by=None, reasons=()), "nothing"),
+        (_leisure_now.Facts(state="free", paused_by=None, reasons=()), "∅"),
     ],
 )
 def test_counting_now(facts: _leisure_now.Facts | None, text: str) -> None:

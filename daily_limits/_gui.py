@@ -9,23 +9,25 @@ one button launches ``sickdays gui`` (``_sick_picker``), which owns its writes.
 
 from __future__ import annotations
 
+import logging
 import tkinter as tk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Final
 
 from daily_limits import _focus_open, _render, _report, _sick_picker
+from daily_limits import _glyphs as gl
 from daily_limits import _tokens as tok
 
 if TYPE_CHECKING:
     from daily_limits._report import Report
 
+_logger: Final = logging.getLogger(__name__)
 _REFRESH_MS: Final = 60_000
 _STATUS_COLOUR: Final = {
     "done": tok.SUCCESS,
     "todo": tok.WARNING,
     "unknown": tok.MUTED_ON_DARK,
 }
-_STATUS_WORD: Final = {"done": "done", "todo": "to do", "unknown": "could not check"}
 # The registry name of the focus earner: its row opens the work (see below).
 _FOCUS: Final = "focus"
 
@@ -42,9 +44,11 @@ class Popup:
         root.resizable(width=False, height=False)
         root.bind("<Escape>", lambda _event: root.destroy())
         root.bind("q", lambda _event: root.destroy())
-        self._notice: tk.Label | None = None
         self._body = tk.Frame(root, bg=tok.INK)
         self._body.pack(fill="both", expand=True)
+        # Replaced by the real one beside the sick-day button on every draw;
+        # this unpacked placeholder only spares the handlers a None check.
+        self._notice: tk.Label = tk.Label(self._body)
         self.refresh()
 
     def _font(self, role: tok.TypeRole, *, bold: bool = False) -> tuple[str, int, str]:
@@ -67,9 +71,15 @@ class Popup:
 
     def _open_focus(self, _event: object = None) -> None:
         """Click on the focus row: the tutor focus screen and the work URL."""
-        message = _focus_open.launch()
-        if message is not None and self._notice is not None:
-            self._notice.configure(text=message)
+        self._warn(_focus_open.launch())
+
+    def _warn(self, message: str | None) -> None:
+        """A failed launch: a warning glyph by the button, the reason in the log."""
+        if message is None:
+            self._notice.configure(text="")
+            return
+        _logger.warning("%s", message)
+        self._notice.configure(text=gl.PROBLEM)
 
     def _link(self, label: tk.Label, name: str) -> tk.Label:
         """Make ``label`` open the focus work when it is the focus row's."""
@@ -93,35 +103,36 @@ class Popup:
 
     def _draw(self, report: Report) -> None:
         shut, game = report["shutdown"], report["gaming"]
-        self._label(
-            self._body, _render.heading(report), "label", fg=tok.MUTED_ON_DARK
-        ).pack(anchor="w")
+        # Today's date; the sick-day cross sits by the button below.
+        self._label(self._body, report["date"], "label", fg=tok.MUTED_ON_DARK).pack(
+            anchor="w"
+        )
         self._label(
             self._body,
-            f"Shutdown {shut['applied'] or shut['resolved']}",
+            f"{gl.SHUTDOWN} {shut['applied'] or shut['resolved']}",
             "title",
             bold=True,
         ).pack(anchor="w", pady=(tok.XS, 0))
         detail = (
-            f"resolved {shut['resolved']}   floor {shut['floor']}"
-            f"   ceiling {shut['ceiling']}"
+            f"{gl.RESOLVED} {shut['resolved']}   {shut['floor']} → {shut['ceiling']}"
         )
         self._label(self._body, detail, "caption", fg=tok.MUTED_ON_DARK).pack(
             anchor="w"
         )
         used = game["used_minutes"]
-        played = "used unknown" if used is None else f"{_render.duration(used)} used"
+        played = "?" if used is None else _render.duration(used)
         self._label(
             self._body,
-            f"{_render.budget_word(report)}"
-            f" {_render.duration(game['budget_minutes'])} · {played}",
+            f"{_budget_glyph(report)} {played} / "
+            f"{_render.duration(game['budget_minutes'])}",
             "subtitle",
             bold=True,
         ).pack(anchor="w", pady=(tok.MD, 0))
+        # The gaming day's date only when it is not today (before 06:00).
+        day = "" if game["day"] == report["date"] else f"   {game['day']}"
         self._label(
             self._body,
-            f"ceiling {_render.duration(game['ceiling_minutes'])}"
-            + _render.gaming_day_note(report),
+            f"{gl.CEILING} {_render.duration(game['ceiling_minutes'])}{day}",
             "caption",
             fg=tok.MUTED_ON_DARK,
         ).pack(anchor="w")
@@ -130,28 +141,27 @@ class Popup:
         self._draw_sick_days(report)
 
     def _draw_earners(self, report: Report) -> None:
-        word = "leisure" if report.get("leisure_active") else "game"
+        budget = _budget_glyph(report)
         card = tk.Frame(self._body, bg=tok.INK_RAISED_1, padx=tok.MD, pady=tok.SM)
         card.pack(fill="x", pady=(tok.MD, 0))
         for row, earner in enumerate(report["earners"]):
-            colour = _STATUS_COLOUR[earner["status"]]
             # A done earner has nothing left to earn: no "+0m", like the bar.
             done = earner["status"] == "done"
+            shutdown = _render.duration(earner["shutdown_minutes"])
+            gaming = _render.duration(earner["gaming_minutes"])
             cells: tuple[tuple[str, str, tok.TypeRole], ...] = (
-                (earner["label"], tok.TEXT_ON_DARK, "body"),
+                (gl.earner(earner["name"]), tok.TEXT_ON_DARK, "body"),
                 (
-                    "" if done else f"+{_render.duration(earner['shutdown_minutes'])}",
+                    "" if done else f"{gl.SHUTDOWN} +{shutdown}",
                     tok.MUTED_ON_DARK,
                     "label",
                 ),
+                ("" if done else f"{budget} +{gaming}", tok.MUTED_ON_DARK, "label"),
                 (
-                    ""
-                    if done
-                    else f"+{_render.duration(earner['gaming_minutes'])} {word}",
-                    tok.MUTED_ON_DARK,
-                    "label",
+                    gl.STATUS[earner["status"]],
+                    _STATUS_COLOUR[earner["status"]],
+                    "body",
                 ),
-                (_STATUS_WORD[earner["status"]], colour, "label"),
             )
             for column, (text, fg, role) in enumerate(cells):
                 tinted = self._tint(report, earner["name"], fg)
@@ -163,20 +173,18 @@ class Popup:
 
     def _draw_todo(self, report: Report) -> None:
         if not report["todo"]:
-            self._label(
-                self._body, "Everything earned today.", "body", fg=tok.SUCCESS
-            ).pack(anchor="w", pady=(tok.MD, 0))
+            self._label(self._body, gl.ALL_EARNED, "title", fg=tok.SUCCESS).pack(
+                anchor="w", pady=(tok.MD, 0)
+            )
             return
-        self._label(self._body, "To extend", "label", fg=tok.MUTED_ON_DARK).pack(
-            anchor="w", pady=(tok.MD, tok.XS)
-        )
-        for row in report["todo"]:
+        # One row per earner still to do: its glyph → the shutdown it earns.
+        for index, row in enumerate(report["todo"]):
             unknown = row["status"] == "unknown"
             self._link(
                 self._label(
                     self._body,
-                    f"{row['label']}  →  shutdown {row['shutdown_after']}"
-                    + ("  (could not check)" if unknown else ""),
+                    f"{gl.earner(row['name'])}  →  {gl.SHUTDOWN} "
+                    f"{row['shutdown_after']}" + ("  ?" if unknown else ""),
                     "body",
                     fg=self._tint(
                         report,
@@ -185,20 +193,22 @@ class Popup:
                     ),
                 ),
                 row["name"],
-            ).pack(anchor="w")
+            ).pack(anchor="w", pady=(tok.MD if index == 0 else 0, 0))
 
     def _draw_sick_days(self, report: Report) -> None:
         row = tk.Frame(self._body, bg=tok.INK)
         row.pack(fill="x", pady=(tok.LG, 0))
-        notice = self._notice = self._label(row, "", "caption", fg=tok.WARNING)
+        self._notice = self._label(row, "", "title", fg=tok.WARNING)
+        notice = self._notice
 
         def open_picker() -> None:
-            notice.configure(text=_sick_picker.launch() or "")
+            self._warn(_sick_picker.launch())
 
-        # A ghost button: accent text and a one-pixel accent border on INK.
+        # A ghost button (accent cross, one-pixel accent border on INK) that
+        # opens the sickdays picker.
         tk.Button(
             row,
-            text="Sick days…",
+            text=gl.SICK,
             command=open_picker,
             fg=tok.ACCENT,
             bg=tok.INK,
@@ -215,10 +225,16 @@ class Popup:
             font=self._font("label", bold=True),
         ).pack(side="left")
         if report["sick"]:
-            self._label(row, "Sick day", "caption", fg=tok.ACCENT).pack(
+            # Today is a sick day: an accent check by the sick-day button.
+            self._label(row, gl.STATUS["done"], "title", fg=tok.ACCENT).pack(
                 side="left", padx=(tok.MD, 0)
             )
         notice.pack(side="left", padx=(tok.MD, 0))
+
+
+def _budget_glyph(report: Report) -> str:
+    """The leisure sun once the leisure budget is live (Phase 2), else the pawn."""
+    return gl.LEISURE if report.get("leisure_active") else gl.GAMING
 
 
 def run() -> int:

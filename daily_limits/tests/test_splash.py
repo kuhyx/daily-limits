@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
 
@@ -135,23 +136,19 @@ def test_monitor_without_xrandr(
             _leisure_now.Facts(
                 state="leisure", paused_by=None, reasons=(MPV, YT, GAME)
             ),
-            [
-                "Kill   Film — mpv (pid 42)",
-                "Block  YT (redirect to the 'leisure spent' page)",
-                "Kill   Hades",
-            ],
+            ["✕ Film — mpv 42", "⊘ YT", "✕ Hades"],
         ),
         (
             None,
-            ["leisure-watch is silent: every focused app would count (fail closed)"],
+            ["?"],
         ),
         (
             _leisure_now.Facts(state="paused", paused_by="i3lock", reasons=()),
-            ["Nothing right now: paused by i3lock"],
+            ["⏸ i3lock"],
         ),
         (
             _leisure_now.Facts(state="free", paused_by=None, reasons=()),
-            ["Nothing is counting right now"],
+            ["○"],
         ),
     ],
 )
@@ -183,10 +180,10 @@ def test_splash_draws_what_would_be_blocked(
     assert root.options["overrideredirect"] is True
     assert root.options["geometry"] == "2304x1080+768+540"
     assert root.options["bg"] == tok.INK
-    assert "🛋 SHADOW: LEISURE WOULD BE BLOCKED NOW" in shown
-    assert "10h05 used of 10h · shadow week: nothing is blocked yet" in shown
-    assert "Kill   Film — mpv (pid 42)" in shown
-    assert any("Click anywhere to dismiss" in text for text in shown)
+    assert shown == [_splash.SPLASH_HEAD, "⧗ 10h05 / 10h", "✕ Film — mpv 42"]
+    # Text-free: no word on screen once leisure-watch's own label is gone.
+    chrome = [text.replace(MPV.label, "") for text in shown]
+    assert not [text for text in chrome if re.search(r"[A-Za-z]{2,}", text)]
     # No widget may take keyboard focus; a click anywhere dismisses.
     assert all(w.options.get("takefocus", 0) == 0 for w in every(root)[1:])
     every(root)[-1].bindings["<Button-1>"](object())

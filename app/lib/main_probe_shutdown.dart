@@ -42,7 +42,7 @@ Future<void> main() async {
   );
   runApp(
     MaterialApp(
-      title: 'Daily limits (shutdown probe)',
+      title: kAppName,
       theme: buildDarkTheme(),
       home: Scaffold(
         body: Center(
