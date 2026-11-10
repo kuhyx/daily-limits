@@ -8,6 +8,8 @@ const Map<String, String> _icons = {
   'anki': '🗂',
   'automation': '⚙',
   'tutor': '⚙',
+  // The focus project's earner; labels are spoken only, so it needs a glyph.
+  'focus': '🎯',
 };
 
 /// The icon for earner [name], or a bullet for one the phone does not know.
