@@ -81,7 +81,7 @@ Future<void> scheduleShutdownWarnings(DailyStatus? status) async {
       scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
       notificationDetails: const NotificationDetails(android: _limits),
       androidScheduleMode: mode,
-      title: 'PC shuts down in $minutes min',
+      title: '⏻ $minutes′',
       body: 'Shutdown at ${status.applied}.',
     );
   }
@@ -130,7 +130,7 @@ Future<void> showTestNotification() async {
   await initNotifications();
   await _plugin.show(
     id: _testId,
-    title: 'Daily limits: test notification',
+    title: '🔔',
     body: 'Notifications from this app reach you.',
     notificationDetails: const NotificationDetails(android: _limits),
   );

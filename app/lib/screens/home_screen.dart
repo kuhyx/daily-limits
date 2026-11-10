@@ -59,11 +59,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily limits'),
         actions: [
           IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
+            key: const Key('home-settings'),
+            icon: const Icon(Icons.settings, semanticLabel: 'Settings'),
             onPressed: _openSettings,
           ),
         ],
@@ -95,20 +94,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final error = outcome.parseError ?? outcome.cache.lastError;
     return [
       if (!outcome.signedIn)
-        const EmptyState(
-          icon: Icons.login,
-          title: 'Not signed in',
-          message:
-              'Open Settings (top right) and sign in to Firebase sync '
-              'to read the limits your PC publishes.',
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: Center(
+            child: Icon(
+              Icons.cloud_off,
+              key: Key('home-signed-out'),
+              size: 64,
+              color: Colors.grey,
+              semanticLabel: 'Not signed in',
+            ),
+          ),
         )
       else if (status == null && outcome.parseError == null)
-        const EmptyState(
-          icon: Icons.hourglass_empty,
-          title: 'Nothing published yet',
-          message:
-              'The PC has not written daily_limits/status.json. '
-              'This screen fills in as soon as it does.',
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: Center(
+            child: Icon(
+              Icons.hourglass_empty,
+              key: Key('home-empty'),
+              size: 64,
+              color: Colors.grey,
+              semanticLabel: 'Nothing published yet',
+            ),
+          ),
         ),
       if (status != null) StatusView(status: status, now: now),
       if (error != null) ...[

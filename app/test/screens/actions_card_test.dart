@@ -45,14 +45,14 @@ void main() {
     return controller;
   }
 
+  final keyFor = {
+    'Refresh now': const Key('action-refresh'),
+    'Declare rest day': const Key('action-rest'),
+  };
+
   bool enabled(WidgetTester tester, String label) {
-    final button = tester.widget<ButtonStyleButton>(
-      find.ancestor(
-        of: find.text(label),
-        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      ),
-    );
-    return button.onPressed != null;
+    final key = keyFor[label];
+    return tester.widget<ButtonStyleButton>(find.byKey(key!)).onPressed != null;
   }
 
   testWidgets('signed in: both buttons enabled, no request lines', (
@@ -178,14 +178,14 @@ void main() {
 
   testWidgets('Refresh now calls requestRefresh', (tester) async {
     final controller = await pump(tester);
-    await tester.tap(find.text('Refresh now'));
+    await tester.tap(find.byKey(const Key('action-refresh')));
     await tester.pump();
     expect(controller.refreshRequests, 1);
   });
 
   testWidgets('picking a rest day calls declareRestDay', (tester) async {
     final controller = await pump(tester);
-    await tester.tap(find.text('Declare rest day'));
+    await tester.tap(find.byKey(const Key('action-rest')));
     await tester.pumpAndSettle();
     expect(find.text('Rest day (future dates only)'), findsOneWidget);
     await tester.tap(find.text('OK'));
@@ -196,7 +196,7 @@ void main() {
 
   testWidgets('cancelling the picker declares nothing', (tester) async {
     final controller = await pump(tester);
-    await tester.tap(find.text('Declare rest day'));
+    await tester.tap(find.byKey(const Key('action-rest')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();

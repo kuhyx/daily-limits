@@ -36,7 +36,7 @@ void main() {
   ) async {
     final controller = FakeController(emptyOutcome(signedIn: false));
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.text('Not signed in'), findsOneWidget);
+    expect(find.byKey(const Key('home-signed-out')), findsOneWidget);
     expect(find.byType(StatusView), findsNothing);
     final refresh = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(refresh.onPressed, isNull);
@@ -47,8 +47,8 @@ void main() {
   ) async {
     final controller = FakeController(emptyOutcome());
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.text('Nothing published yet'), findsOneWidget);
-    expect(find.text('Not signed in'), findsNothing);
+    expect(find.byKey(const Key('home-empty')), findsOneWidget);
+    expect(find.byKey(const Key('home-signed-out')), findsNothing);
     // Empty footer: nothing about publish or read times.
     expect(find.textContaining('read '), findsNothing);
   });
@@ -61,7 +61,7 @@ void main() {
     );
     await pump(tester, HomeScreen(controller: controller));
     expect(find.text('Unreadable status from the PC: boom'), findsOneWidget);
-    expect(find.text('Nothing published yet'), findsNothing);
+    expect(find.byKey(const Key('home-empty')), findsNothing);
   });
 
   testWidgets('shows the last cache error', (tester) async {
@@ -83,7 +83,7 @@ void main() {
     await pump(tester, HomeScreen(controller: controller));
     expect(find.byType(StatusView), findsOneWidget);
     expect(find.byType(ActionsCard), findsOneWidget);
-    expect(find.text('Nothing published yet'), findsNothing);
+    expect(find.byKey(const Key('home-empty')), findsNothing);
     expect(
       find.text('Published ${hhmm(published)} · read ${hhmm(fetched)}'),
       findsOneWidget,
@@ -130,7 +130,7 @@ void main() {
     installPlatformFakes(tempDir());
     final controller = FakeController(emptyOutcome());
     await pump(tester, HomeScreen(controller: controller));
-    await tester.tap(find.byTooltip('Settings'));
+    await tester.tap(find.byKey(const Key('home-settings')));
     await tester.pumpAndSettle();
     expect(find.byType(SettingsScreen), findsOneWidget);
     expect(controller.refreshes, 0);
@@ -147,7 +147,7 @@ void main() {
     await pump(tester, HomeScreen(controller: controller));
     controller.show(emptyOutcome(signedIn: false));
     await tester.pump();
-    expect(find.text('Not signed in'), findsOneWidget);
+    expect(find.byKey(const Key('home-signed-out')), findsOneWidget);
   });
 
   testWidgets('disposing the screen disposes its controller', (tester) async {
@@ -169,7 +169,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     });
     await tester.pump();
-    expect(find.text('Not signed in'), findsOneWidget);
+    expect(find.byKey(const Key('home-signed-out')), findsOneWidget);
     // Unmount: cancels the controller's once-a-minute timer.
     await tester.pumpWidget(const SizedBox());
   });

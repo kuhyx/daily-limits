@@ -18,31 +18,36 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Icon(Icons.settings, semanticLabel: 'Settings'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           ListTile(
+            key: const Key('settings-sync'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('Sync settings'),
-            subtitle: const Text('Firebase sign-in'),
-            trailing: const Icon(Icons.chevron_right),
+            leading: const Icon(Icons.sync, semanticLabel: 'Sync settings'),
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(builder: (_) => const _SyncScreen()),
             ),
           ),
           const ListTile(
+            key: Key('settings-widget'),
             contentPadding: EdgeInsets.zero,
-            title: Text('Add widget to home screen'),
-            subtitle: Text('One line: shutdown, gaming left, extenders'),
-            trailing: Icon(Icons.chevron_right),
+            leading: Icon(
+              Icons.widgets,
+              semanticLabel: 'Add widget to home screen',
+            ),
             onTap: requestPinWidget,
           ),
           ListTile(
+            key: const Key('settings-test-notify'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('Send a test notification'),
-            subtitle: const Text('Asks for the permission first if needed'),
-            trailing: const Icon(Icons.chevron_right),
+            leading: const Icon(
+              Icons.notifications_active,
+              semanticLabel: 'Send a test notification',
+            ),
             onTap: () async {
               await initNotifications();
               await requestNotificationPermission();

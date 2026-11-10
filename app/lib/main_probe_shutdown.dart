@@ -45,7 +45,17 @@ Future<void> main() async {
       title: 'Daily limits (shutdown probe)',
       theme: buildDarkTheme(),
       home: Scaffold(
-        body: Center(child: Text('Probe: shutdown $applied, warning at -10')),
+        body: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.power_settings_new),
+              Text(applied),
+              const Icon(Icons.warning_amber),
+              const Text('-10'),
+            ],
+          ),
+        ),
       ),
     ),
   );

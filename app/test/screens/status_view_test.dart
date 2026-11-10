@@ -30,15 +30,15 @@ void main() {
     tester,
   ) async {
     await pump(tester, statusJson(published: now));
-    expect(find.text('Shutdown'), findsOneWidget);
+    expect(find.byIcon(Icons.power_settings_new), findsOneWidget);
     expect(find.textContaining('22:00'), findsWidgets);
     expect(find.text('Registry resolves to 20:00'), findsOneWidget);
     expect(find.text('Floor 18:00 → ceiling 23:00'), findsOneWidget);
-    expect(find.text('Gaming'), findsOneWidget);
+    expect(find.byIcon(Icons.more_time), findsOneWidget);
     expect(find.textContaining('PC offline'), findsNothing);
     expect(find.byType(ColorFiltered), findsNothing);
-    expect(find.text('To extend'), findsOneWidget);
-    expect(find.text('Earners'), findsOneWidget);
+    expect(find.byIcon(Icons.more_time), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events), findsOneWidget);
   });
 
   testWidgets('offline: banner with the publish time and greyscale', (
@@ -141,7 +141,7 @@ void main() {
 
   testWidgets('no earners shows None', (tester) async {
     await pump(tester, statusJson(published: now, earners: noEarners));
-    expect(find.text('None'), findsOneWidget);
+    expect(find.byIcon(Icons.remove), findsOneWidget);
   });
 
   testWidgets('earner statuses: done, to do, could not check', (tester) async {

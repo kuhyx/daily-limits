@@ -22,29 +22,29 @@ void main() {
 
   testWidgets('lists the three tiles', (tester) async {
     await pump(tester);
-    expect(find.text('Sync settings'), findsOneWidget);
-    expect(find.text('Add widget to home screen'), findsOneWidget);
-    expect(find.text('Send a test notification'), findsOneWidget);
+    expect(find.byKey(const Key('settings-sync')), findsOneWidget);
+    expect(find.byKey(const Key('settings-widget')), findsOneWidget);
+    expect(find.byKey(const Key('settings-test-notify')), findsOneWidget);
   });
 
   testWidgets('Add widget asks the launcher to pin it', (tester) async {
     await pump(tester);
-    await tester.tap(find.text('Add widget to home screen'));
+    await tester.tap(find.byKey(const Key('settings-widget')));
     await tester.pump();
     expect(log.named('requestPinWidget'), hasLength(1));
   });
 
   testWidgets('Send a test notification shows it', (tester) async {
     await pump(tester);
-    await tester.tap(find.text('Send a test notification'));
+    await tester.tap(find.byKey(const Key('settings-test-notify')));
     await tester.pump();
     expect(log.named('requestNotificationsPermission'), isNotEmpty);
-    expect(log.titles('show'), ['Daily limits: test notification']);
+    expect(log.titles('show'), ['🔔']);
   });
 
   testWidgets('Sync settings opens the shared sync screen', (tester) async {
     await pump(tester);
-    await tester.tap(find.text('Sync settings'));
+    await tester.tap(find.byKey(const Key('settings-sync')));
     await tester.pumpAndSettle();
     expect(find.byType(SyncSettingsScreen), findsOneWidget);
   });

@@ -83,7 +83,8 @@ class _ShutdownCard extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     final resolved = status.resolved;
     return _Section(
-      title: 'Shutdown',
+      title: '',
+      leading: const Icon(Icons.power_settings_new, semanticLabel: 'Shutdown'),
       children: [
         Text(
           '$kShutdownIcon ${status.applied ?? 'none applied'}',
@@ -150,7 +151,8 @@ class _ExtendLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [for (final t in todo) _extendItem(t)];
     return _Section(
-      title: 'To extend',
+      title: '',
+      leading: const Icon(Icons.more_time, semanticLabel: 'To extend'),
       children: [
         Text(items.join(', '), style: Theme.of(context).textTheme.bodyLarge),
       ],
@@ -168,9 +170,15 @@ class _EarnersCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.statusColors;
     return _Section(
-      title: 'Earners',
+      title: '',
+      leading: const Icon(Icons.emoji_events, semanticLabel: 'Earners'),
       children: [
-        if (earners.isEmpty) Text('None', style: theme.textTheme.bodyLarge),
+        if (earners.isEmpty)
+          Icon(
+            Icons.remove,
+            color: theme.colorScheme.outline,
+            semanticLabel: 'None',
+          ),
         for (final e in earners)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -209,10 +217,11 @@ class _EarnersCard extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const new({required this.title, required this.children});
+  const new({required this.title, required this.children, this.leading});
 
   final String title;
   final List<Widget> children;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -223,14 +232,30 @@ class _Section extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            if (title.isNotEmpty)
+              Text(
+                title,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ...children,
+            if (leading != null) ...[
+              if (title.isNotEmpty) const SizedBox(height: AppSpacing.sm),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  leading!,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: children,
+                    ),
+                  ),
+                ],
+              ),
+            ] else
+              ...children,
           ],
         ),
       ),

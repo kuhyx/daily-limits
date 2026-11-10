@@ -52,10 +52,7 @@ void main() {
     test('schedules both warnings, exact when allowed', () async {
       await scheduleShutdownWarnings(status(applied: inMinutes(60)));
       expect(log.named('cancel'), hasLength(2));
-      expect(log.titles('zonedSchedule'), [
-        'PC shuts down in 30 min',
-        'PC shuts down in 10 min',
-      ]);
+      expect(log.titles('zonedSchedule'), ['⏻ 30′', '⏻ 10′']);
       final mode = scheduleMode(log);
       expect(mode, 'exactAllowWhileIdle');
     });
@@ -69,7 +66,7 @@ void main() {
 
     test('skips a warning whose time has passed', () async {
       await scheduleShutdownWarnings(status(applied: inMinutes(20)));
-      expect(log.titles('zonedSchedule'), ['PC shuts down in 10 min']);
+      expect(log.titles('zonedSchedule'), ['⏻ 10′']);
     });
 
     test(
@@ -145,6 +142,6 @@ void main() {
 
   test('showTestNotification posts the test notification', () async {
     await showTestNotification();
-    expect(log.titles('show'), ['Daily limits: test notification']);
+    expect(log.titles('show'), ['🔔']);
   });
 }
