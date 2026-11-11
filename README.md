@@ -35,6 +35,11 @@ and enables `daily-limits.timer` (every 60 s: `--sync`; the cache it writes
 first is read by the i3blocks block). `daily-limits-focus.path` re-writes the cache when
 the focus project's files change. `install.sh --dry-run` prints every step instead.
 
+`scripts/deploy.sh` is the real deploy (Ship runs it): it fast-forwards `~/src/daily-limits`
+(refusing a dirty, diverged or non-main checkout), runs its `install.sh`, restarts the units and
+checks one fresh cache, then release-builds and `adb install -r`s the app on the Pixel. It skips
+the phone build when that commit is already installed, and exits non-zero when the phone is missing.
+
 ## JSON contract
 
 Fixed: the i3blocks block parses it.

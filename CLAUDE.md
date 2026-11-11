@@ -46,6 +46,7 @@ Read README.md first, then DOCS-sources.md.
 ## Commands
 
 - run: `PYTHONPATH=. python3 -m daily_limits`
+- deploy: `scripts/deploy.sh`
 - test: `.venv/bin/python -m pytest -q`
 - test-changed: `scripts/test_changed.sh`
 - lint: `ruff check . && .venv/bin/python -m mypy daily_limits`
