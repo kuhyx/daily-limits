@@ -29,7 +29,7 @@ dependencies:
       path: design_system
   flutter:
     sdk: flutter
-  flutter_local_notifications: 23.0.0
+  flutter_local_notifications: 23.0.1
   home_widget: 0.10.0
   # The status cache lives in a JSON file under the app-support directory,
   # shared between the UI isolate and the workmanager isolate. Not
