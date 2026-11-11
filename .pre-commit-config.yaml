@@ -147,9 +147,11 @@ repos:
         language: system
         pass_filenames: false
         files: ^app/(lib|test)/.*\.dart$
+      # -j 2: default concurrency peaked at 2.2 GB and was OOM-killed under
+      # capped.sh's 2 GiB (daily_limits/tests/test_app_test_hook.py).
       - id: app-test
         name: flutter test (app)
-        entry: bash -c 'cd app && $(command -v fvm >/dev/null && echo fvm) flutter test'
+        entry: bash -c 'cd app && $(command -v fvm >/dev/null && echo fvm) flutter test -j 2'
         language: system
         pass_filenames: false
         files: ^app/(lib|test)/.*\.dart$
