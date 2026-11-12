@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from crdt_sync import open_encrypted_client
+from crdt_sync import _e2e_store, open_encrypted_client, reset_e2e_copy_memo
 import pytest
 
 from daily_limits import _paths, _sync, _sync_client
@@ -125,3 +125,32 @@ def test_a_plaintext_request_on_the_old_prefix_is_ignored(raw: FakeStore) -> Non
     _sync.tick(_samples.report(), _no_rebuild)
     assert old in raw.files
     assert not any("results" in path for path in raw.files)
+
+
+def test_a_second_run_reuses_the_cached_key_and_copy_memo(
+    raw: FakeStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each tick is a new process: the key and copy memo live in STATE_DIR."""
+    derives: list[str] = []
+    copies: list[str] = []
+    real_unlock = _e2e_store.unlock_e2e
+    real_copy = _e2e_store.copy_to_encrypted
+
+    def unlock(*args: Any, **kwargs: Any) -> Any:
+        derives.append("derive")
+        return real_unlock(*args, **kwargs)
+
+    def copy(*args: Any, **kwargs: Any) -> Any:
+        copies.append("copy")
+        return real_copy(*args, **kwargs)
+
+    monkeypatch.setattr(_e2e_store, "unlock_e2e", unlock)
+    monkeypatch.setattr(_e2e_store, "copy_to_encrypted", copy)
+    _sync.tick(_samples.report(), _no_rebuild)
+    reset_e2e_copy_memo()  # what a fresh process starts with
+    _sync.tick(_samples.report(), _no_rebuild)
+    assert derives == ["derive"]
+    assert copies == ["copy"]
+    cached = [p for p in _paths.STATE_DIR.rglob("*") if p.is_file()]
+    assert cached
+    assert all(p.stat().st_mode & 0o077 == 0 for p in cached if "key" in p.name)

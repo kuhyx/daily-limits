@@ -93,7 +93,13 @@ def get_sync_client() -> EncryptingStore:
         raise SyncUnavailableError(msg) from exc
     try:
         store, _ = open_encrypted_client(
-            client, OLD_PREFIX, passphrase=_passphrase(), params=ARGON2
+            client,
+            OLD_PREFIX,
+            passphrase=_passphrase(),
+            params=ARGON2,
+            # Each tick is a fresh process: keep the derived key (0600) and
+            # the copy memo here so Argon2id and the old-prefix scan run once.
+            state_dir=_paths.STATE_DIR,
         )
     except E2eLockedError as exc:
         msg = f"daily-limits sync e2e locked: {exc}"
