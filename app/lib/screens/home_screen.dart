@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/actions_card.dart';
 import 'package:daily_limits/screens/settings_screen.dart';
@@ -60,6 +61,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          // The shared crdt-sync passphrase: closed lock while sync is locked.
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) => E2ePassphraseButton(
+              key: const Key('home-e2e'),
+              locked: _controller.outcome?.locked ?? false,
+              onSaved: () => unawaited(_controller.refresh()),
+            ),
+          ),
           IconButton(
             key: const Key('home-settings'),
             icon: const Icon(Icons.settings, semanticLabel: 'Settings'),
@@ -130,7 +140,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       ],
       const SizedBox(height: AppSpacing.md),
-      ActionsCard(controller: _controller, signedIn: outcome.signedIn),
+      ActionsCard(
+        controller: _controller,
+        signedIn: outcome.signedIn && !outcome.locked,
+      ),
       const SizedBox(height: AppSpacing.md),
       _Footer(outcome: outcome, status: status),
     ];

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from daily_limits._report import Report
 
 NOW = 1_791_540_000
-REQ = "daily_limits/requests"
+REQ = "daily_limits-e2e/requests"
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ def test_refresh_rebuilds_publishes_then_answers(store: FakeStore) -> None:
     _sync.tick(_samples.report(), rebuild)
     assert rebuild.calls == 1
     assert _published(store)["date"] == "2026-10-10"
-    assert store.puts == [_sync_client.STATUS_PATH, "daily_limits/results/r1.json"]
+    assert store.puts == [_sync_client.STATUS_PATH, "daily_limits-e2e/results/r1.json"]
     assert f"{REQ}/r1.json" not in store.files
 
 

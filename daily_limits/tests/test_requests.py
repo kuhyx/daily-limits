@@ -13,8 +13,8 @@ from daily_limits import _paths, _requests, _rest_day, _state
 from daily_limits.tests._fake_store import FakeStore
 
 NOW = 1_791_540_000
-REQ = "daily_limits/requests"
-RES = "daily_limits/results"
+REQ = "daily_limits-e2e/requests"
+RES = "daily_limits-e2e/results"
 
 
 def _body(**fields: object) -> str:

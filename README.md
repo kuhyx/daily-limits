@@ -123,13 +123,13 @@ Through `crdt_sync.firebase_client_for("daily_limits")` (session cached in
 `.` in a key is escaped (`status.json` is stored as `status~2Ejson`) and every
 value is a JSON **string** holding the serialized document:
 
-- `daily_limits/status.json` (PC writes): the contract above plus
+- `daily_limits-e2e/status.json` (PC writes): the contract above plus
   `published_at` (unix int) and `device_id` (this install's uuid,
   `~/.local/share/daily-limits/.device_id`). Written when the content changes
   (ignoring `generated_at`) and at least every 10 min.
-- `daily_limits/requests/<id>.json` (phone writes): `{"id", "kind":
+- `daily_limits-e2e/requests/<id>.json` (phone writes): `{"id", "kind":
   "refresh"|"rest_day", "date": "YYYY-MM-DD"|null, "created_at", "device_id"}`.
-- `daily_limits/results/<id>.json` (PC writes): `{"id", "ok", "message",
+- `daily_limits-e2e/results/<id>.json` (PC writes): `{"id", "ok", "message",
   "handled_at"}`; `<id>` is the request's filename. Deleted after 7 days.
 
 Each request is answered once (`~/.local/share/daily-limits/handled_requests.json`),
@@ -137,6 +137,15 @@ then deleted. Older than 10 min: `ok=false, "expired"`. `refresh` republishes.
 `rest_day` runs `/usr/bin/python3 -m screen_locker.screen_lock
 --declare-rest-day <date>` (screen-locker applies every rule) and republishes.
 A Firebase failure is one warning; the cache is written before any network call.
+
+**End-to-end encrypted.** Every value under `daily_limits-e2e/` is sealed
+(XChaCha20-Poly1305, crdt-sync >= 0.10.0) with a key derived (Argon2id) from
+the shared crdt-sync passphrase: `~/.config/crdt-sync/password` on the PC,
+the keystore on the phone (the lock icon on the home screen). The key header
+is `daily_limits-e2e/e2e`. No or a wrong passphrase skips the tick (one
+warning on the PC, closed lock on the phone); nothing is written in the
+clear. The old plaintext `daily_limits/` is no longer read or written, and
+never deleted by this app.
 
 The phone side (status, widget, notifications, the two requests) is the
 Flutter app in `app/`; see [`app/README.md`](app/README.md).

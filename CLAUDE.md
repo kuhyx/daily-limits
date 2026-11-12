@@ -8,8 +8,8 @@ Read README.md first, then DOCS-sources.md.
   budget, and never talk to or restart steam-backlog-enforcer's daemon. Local
   writes: the cache under `$XDG_RUNTIME_DIR`, `--sync`'s state under
   `~/.local/share/daily-limits/` and the shadow alerts' state under
-  `~/.local/state/daily-limits/`. Remote writes: only `daily_limits/` in
-  Firebase (README "Firebase"). The popup's one button may *launch* the
+  `~/.local/state/daily-limits/`. Remote writes: only `daily_limits-e2e/`
+  in Firebase, sealed, never plaintext (README "Firebase"). The popup's one button may *launch* the
   sickdays picker (`_sick_picker.py`: `sickdays gui`, detached, a subprocess,
   never an import); that program owns its own writes.
 - **The shadow week only shows.** `_alerts` may run `notify-send` and launch
@@ -41,7 +41,8 @@ Read README.md first, then DOCS-sources.md.
 - **Gaming is per gaming day** (06:00 boundary, `gaming.day`). Shutdown is per
   calendar day.
 - Tests must redirect every `_paths` constant. They must never read the real
-  ledgers, key, schedule or playtime state, nor touch Firebase.
+  ledgers, key, schedule or playtime state, nor touch Firebase, nor read the
+  real crdt-sync passphrase (conftest points `_paths.PASSWORD_FILE` at a temp file).
 
 ## Commands
 

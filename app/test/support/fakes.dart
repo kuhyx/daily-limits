@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
+import 'package:daily_limits/services/sync_app.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -226,4 +228,16 @@ Directory tempDir() {
   final dir = Directory.systemTemp.createTempSync('daily_limits_test');
   addTearDown(() => dir.deleteSync(recursive: true));
   return dir;
+}
+
+/// The keystore fake holding the shared E2E [passphrase], Argon2id at its
+/// lowest cost and the once-per-process copy memo cleared.
+void installE2eTestStorage({String passphrase = 'test-passphrase'}) {
+  installFakeSecureStorage(initial: {kE2ePassphraseStorageKey: passphrase});
+  e2eArgon2Params = const Argon2Params(
+    memoryKiB: 8,
+    iterations: 1,
+    parallelism: 1,
+  );
+  resetE2eCopyMemo();
 }

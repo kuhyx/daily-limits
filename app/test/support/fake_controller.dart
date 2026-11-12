@@ -100,11 +100,13 @@ SyncOutcome outcomeWith({
 /// An outcome with no status at all.
 SyncOutcome emptyOutcome({
   bool signedIn = true,
+  bool locked = false,
   String? parseError,
   String? lastError,
   List<SentRequest> requests = const [],
 }) => SyncOutcome(
   signedIn: signedIn,
+  locked: locked,
   parseError: parseError,
   cache: LocalCache(lastError: lastError, requests: [...requests]),
 );

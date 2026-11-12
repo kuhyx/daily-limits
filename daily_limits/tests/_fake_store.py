@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Krzysztof Rudnicki
 """An in-memory stand-in for crdt_sync's ``FirebaseSyncClient``.
 
-Only the four calls ``--sync`` makes. Paths are logical (``a/b.json``); a
+The calls ``--sync`` and crdt_sync's encrypted store make. Paths are logical (``a/b.json``); a
 value that is not a ``str`` models an RTDB leaf written as an object, which
 ``get_string_map`` leaves out -- exactly like the real client.
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from crdt_sync import FirebaseSyncClient
+    from crdt_sync import EncryptingStore
 
 
 class FakeStore:
@@ -40,6 +40,13 @@ class FakeStore:
             if isinstance(value, str)
         }
 
+    def get_file_text(self, path: str) -> str | None:
+        value = self.files.get(path)
+        return value if isinstance(value, str) else None
+
+    def can_access_remote(self) -> bool:
+        return True
+
     def put_file_text(self, path: str, text: str, *, message: str) -> None:
         assert message
         self.files[path] = text
@@ -50,6 +57,6 @@ class FakeStore:
         self.files.pop(path, None)
         self.deletes.append(path)
 
-    def client(self) -> FirebaseSyncClient:
+    def client(self) -> EncryptingStore:
         """This fake, typed as the client the app expects."""
-        return cast("FirebaseSyncClient", self)
+        return cast("EncryptingStore", self)

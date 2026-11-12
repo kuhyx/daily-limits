@@ -1,3 +1,4 @@
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/actions_card.dart';
@@ -43,6 +44,32 @@ void main() {
     expect(find.byType(StatusView), findsNothing);
     final refresh = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(refresh.onPressed, isNull);
+  });
+
+  testWidgets('locked: closed lock, disabled actions, saving refreshes', (
+    tester,
+  ) async {
+    installFakeSecureStorage();
+    final controller = FakeController(emptyOutcome(locked: true));
+    await pump(tester, HomeScreen(controller: controller));
+    final lock = find.byKey(const Key('home-e2e'));
+    expect(tester.widget<E2ePassphraseButton>(lock).locked, isTrue);
+    expect(find.byIcon(Icons.lock), findsOneWidget);
+    final refresh = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(refresh.onPressed, isNull);
+    final before = controller.refreshes;
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'test-passphrase');
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+    expect(controller.refreshes, before + 1);
+  });
+
+  testWidgets('unlocked: open lock icon', (tester) async {
+    final controller = FakeController(emptyOutcome());
+    await pump(tester, HomeScreen(controller: controller));
+    expect(find.byIcon(Icons.lock_open), findsOneWidget);
   });
 
   testWidgets('signed in with no status: nothing published yet', (

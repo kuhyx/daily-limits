@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Krzysztof Rudnicki
-"""Answering the phone's requests under ``daily_limits/requests/``.
+"""Answering the phone's requests under ``daily_limits-e2e/requests/`` (sealed).
 
 The phone writes ``requests/<id>.json``; the PC answers in
 ``results/<id>.json`` and deletes the request. The id is the *filename* stem,
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Final
 from daily_limits import _paths, _rest_day, _state, _sync_client
 
 if TYPE_CHECKING:
-    from crdt_sync import FirebaseSyncClient
+    from crdt_sync import EncryptingStore
 
 _logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def evaluate(
     return _result(request_id, ok=ok, message=message, now=now), republish
 
 
-def collect(client: FirebaseSyncClient, *, now: int) -> tuple[list[str], bool]:
+def collect(client: EncryptingStore, *, now: int) -> tuple[list[str], bool]:
     """Evaluate every unhandled request; return ``(request names, republish)``.
 
     Each new outcome is saved to the handled file straight away, unwritten.
@@ -115,7 +115,7 @@ def collect(client: FirebaseSyncClient, *, now: int) -> tuple[list[str], bool]:
     return names, republish
 
 
-def finish(client: FirebaseSyncClient, names: list[str]) -> None:
+def finish(client: EncryptingStore, names: list[str]) -> None:
     """Write each pending result, mark it written, then delete its request."""
     handled = _state.load(_paths.HANDLED_FILE)
     for name in names:
@@ -159,7 +159,7 @@ def _entry_time(entry: object) -> int | None:
     return value if isinstance(value, int) else None
 
 
-def sweep(client: FirebaseSyncClient, *, now: int) -> None:
+def sweep(client: EncryptingStore, *, now: int) -> None:
     """Delete results older than 7 days, and forget handled ids just as old."""
     cutoff = now - RESULT_TTL_SECONDS
     for name, text in client.get_string_map(_sync_client.RESULTS_DIR).items():

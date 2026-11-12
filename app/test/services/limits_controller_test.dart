@@ -21,6 +21,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeStore store;
   late RemoteStore? current;
+  late bool locked;
   late int opens;
   late LimitsController controller;
 
@@ -28,10 +29,12 @@ void main() {
     installPlatformFakes(tempDir());
     store = FakeStore({kStatusPath: statusJson(published: DateTime.now())});
     current = store;
+    locked = false;
     opens = 0;
     controller = LimitsController(
       open: () async {
         opens++;
+        if (locked) throw const SyncLockedException(E2eLockReason.wrongKey);
         return current;
       },
       device: () async => 'phone-1',
@@ -115,5 +118,23 @@ void main() {
     await until(() => opens > before);
     await Future<void>.delayed(const Duration(milliseconds: 40));
     expect(opens, before + 1);
+  });
+
+  test('a locked device sends nothing and says why', () async {
+    locked = true;
+    await controller.requestRefresh();
+    expect(controller.actionError, 'Sync locked: wrongKey');
+    expect(controller.latest(RequestKind.refresh), isNull);
+    expect(store.files.keys, [kStatusPath]);
+  });
+
+  test('polling stops while sync is locked', () async {
+    await controller.requestRefresh();
+    locked = true;
+    final before = opens;
+    await until(() => opens > before);
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    expect(opens, before + 1);
+    expect(controller.outcome!.locked, isFalse);
   });
 }

@@ -17,6 +17,8 @@ readonly REPO_DIR
 readonly SYSTEM_PYTHON="/usr/bin/python3"
 readonly UNIT_DIR="${HOME}/.config/systemd/user"
 readonly BIN="${HOME}/.local/bin/daily-limits"
+# The shared libraries, with crdt_sync's end-to-end API and its crypto deps.
+readonly RUNTIME_PROBE='import earned_time, sickdays, focus_project, nacl, argon2; from crdt_sync import open_encrypted_client'
 readonly UNITS=(daily-limits.service daily-limits.timer daily-limits-focus.service daily-limits-focus.path)
 DRY_RUN=0
 
@@ -47,10 +49,12 @@ install_package() {
     # and, once the consumers are re-pinned to a newer tag, DOWNGRADE -- it.
     # crdt_sync is shared the same way (every Firebase app), so the same rule
     # covers all three (sickdays too): --no-deps only when none would be
-    # installed by the pins.
+    # installed by the pins. The probe asks for the end-to-end API and its
+    # crypto deps (pynacl, argon2-cffi), so a pre-E2E crdt_sync (< 0.10.0)
+    # does not count as "installed" and the pins pull the new one in.
     local deps=()
-    if "$SYSTEM_PYTHON" -c 'import earned_time, crdt_sync, sickdays, focus_project' 2>/dev/null; then
-        log "earned_time, crdt_sync, sickdays and focus_project already installed; keeping them (--no-deps)"
+    if "$SYSTEM_PYTHON" -c "$RUNTIME_PROBE" 2>/dev/null; then
+        log "earned_time, crdt_sync (E2E), sickdays and focus_project already installed; keeping them (--no-deps)"
         deps=(--no-deps)
     fi
     run "$SYSTEM_PYTHON" -m pip install --user --break-system-packages -q \
@@ -59,7 +63,7 @@ install_package() {
 
 verify_runtime() {
     log "verifying imports and the entry point"
-    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, earned_time, crdt_sync, sickdays, tkinter" ||
+    run "$SYSTEM_PYTHON" -c "import daily_limits._cli, tkinter; $RUNTIME_PROBE" ||
         fail "a runtime dependency is missing from the system python"
     if ((!DRY_RUN)); then
         [[ -x "$BIN" ]] || fail "no entry point at $BIN"

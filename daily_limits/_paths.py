@@ -13,6 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
+import crdt_sync
 import earned_time
 
 HOME: Final = Path.home()
@@ -57,6 +58,10 @@ STATE_DIR: Final = HOME / ".local/share/daily-limits"
 DEVICE_ID_FILE: Final = STATE_DIR / ".device_id"
 PUBLISH_STATE_FILE: Final = STATE_DIR / "publish_state.json"
 HANDLED_FILE: Final = STATE_DIR / "handled_requests.json"
+
+# The shared crdt-sync passphrase (``~/.config/crdt-sync/password``) the
+# end-to-end key is derived from. Read only; tests point it at a temp file.
+PASSWORD_FILE: Final[Path] = crdt_sync.PASSWORD_FILE
 
 # The interpreter screen-locker is installed into (editable, system python).
 # Absolute: the systemd user unit's PATH is not the login shell's.

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from crdt_sync import ConfigError, FirebaseAuthError
+from crdt_sync import ConfigError, EncryptingStore, FirebaseAuthError
 import pytest
 
 from daily_limits import _sync_client
@@ -19,8 +19,10 @@ def test_returns_the_client_for_this_app(monkeypatch: pytest.MonkeyPatch) -> Non
         return store
 
     monkeypatch.setattr(_sync_client, "firebase_client_for", build)
-    assert _sync_client.get_sync_client() is store
+    client = _sync_client.get_sync_client()
+    assert isinstance(client, EncryptingStore)
     assert seen == [("daily_limits", 10.0)]
+    assert "daily_limits-e2e/e2e" in store.files
 
 
 @pytest.mark.parametrize(

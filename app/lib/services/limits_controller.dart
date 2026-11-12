@@ -4,6 +4,7 @@ library;
 
 import 'dart:async';
 
+import 'package:crdt_sync/crdt_sync.dart';
 import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/services/local_cache.dart';
 import 'package:daily_limits/services/requests.dart';
@@ -115,7 +116,14 @@ class LimitsController extends ChangeNotifier {
 
   Future<void> _send(RequestKind kind, {String? date}) async {
     _actionError = null;
-    final client = await _open();
+    final RemoteStore? client;
+    try {
+      client = await _open();
+    } on SyncLockedException catch (locked) {
+      _actionError = '$locked';
+      _notify();
+      return;
+    }
     if (client == null) {
       _actionError = 'Sign in first (Settings).';
       _notify();
@@ -152,7 +160,12 @@ class LimitsController extends ChangeNotifier {
   }
 
   Future<void> _pollOnce() async {
-    final client = await _open();
+    final RemoteStore? client;
+    try {
+      client = await _open();
+    } on SyncLockedException {
+      return; // The lock icon shows it; saving a passphrase refreshes.
+    }
     if (client == null) return;
     final cache = await LocalCache.load();
     final changed = await collectAnswers(client, cache);

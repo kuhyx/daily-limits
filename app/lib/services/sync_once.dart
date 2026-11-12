@@ -19,10 +19,15 @@ class SyncOutcome {
     required this.cache,
     this.status,
     this.parseError,
+    this.locked = false,
   });
 
   /// Whether this device holds a Firebase session.
   final bool signedIn;
+
+  /// Signed in, but the end-to-end key is unavailable (no or a wrong
+  /// passphrase): nothing was read or written.
+  final bool locked;
 
   /// The cache after the pass (status text, requests, last error).
   final LocalCache cache;
@@ -48,8 +53,11 @@ class SyncOutcome {
 Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
   final cache = await LocalCache.load();
   RemoteStore? client;
+  var locked = false;
   try {
     client = await open();
+  } on SyncLockedException {
+    locked = true;
   } on Object catch (error) {
     cache.lastError = 'Sign-in failed: $error';
   }
@@ -71,7 +79,8 @@ Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
   await scheduleShutdownWarnings(status);
   await updateHomeWidget(status);
   return SyncOutcome(
-    signedIn: client != null,
+    signedIn: client != null || locked,
+    locked: locked,
     cache: cache,
     status: status,
     parseError: parseError,

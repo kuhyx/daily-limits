@@ -12,7 +12,10 @@ Autouse, so no test can forget them:
   /run/user;
 * ``--sync``'s state lives in ``tmp_path``, screen-locker's interpreter is a
   path that does not exist, and building a real Firebase client fails: no
-  test reaches the network or declares a rest day;
+  test reaches the network or declares a rest day; the crdt-sync passphrase
+  is a temp file holding ``test-passphrase`` (never the real
+  ``~/.config/crdt-sync/password``), Argon2id runs at its lowest cost and
+  the once-per-process e2e copy memo is cleared;
 * the sick-day picker resolves to a name that is on no PATH, so no test
   starts the real ``sickdays gui``;
 * the shadow alerts' state lives in ``tmp_path`` and notify-send,
@@ -31,6 +34,7 @@ import sys
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
+from crdt_sync import Argon2Params, reset_e2e_copy_memo
 from earned_time import _leisure
 import pytest
 import sickdays
@@ -78,6 +82,13 @@ def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(_paths, "HANDLED_FILE", state / "handled_requests.json")
     monkeypatch.setattr(_paths, "SCREEN_LOCKER_PYTHON", str(tmp_path / "no-python"))
     monkeypatch.setattr(_sync_client, "firebase_client_for", _no_firebase)
+    password = tmp_path / "crdt-sync-password"
+    password.write_text("test-passphrase\n", encoding="utf-8")
+    monkeypatch.setattr(_paths, "PASSWORD_FILE", password)
+    monkeypatch.setattr(
+        _sync_client, "ARGON2", Argon2Params(memory_kib=8, iterations=1)
+    )
+    reset_e2e_copy_memo()
     monkeypatch.setattr(_sick_picker, "EXECUTABLE", "sickdays-absent-in-tests")
     monkeypatch.setattr(_paths, "ALERT_STATE_FILE", tmp_path / "alerts" / "a.json")
     for name in ("NOTIFY_SEND", "SYSTEMD_RUN", "SYSTEMCTL", "XRANDR", "PKILL"):

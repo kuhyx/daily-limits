@@ -16,9 +16,9 @@ void main() {
   tearDown(() => debugDefaultTargetPlatformOverride = null);
 
   test('paths follow the Firebase contract', () {
-    expect(kStatusPath, 'daily_limits/status.json');
-    expect(requestPath('u'), 'daily_limits/requests/u.json');
-    expect(resultPath('u'), 'daily_limits/results/u.json');
+    expect(kStatusPath, 'daily_limits-e2e/status.json');
+    expect(requestPath('u'), 'daily_limits-e2e/requests/u.json');
+    expect(resultPath('u'), 'daily_limits-e2e/results/u.json');
   });
 
   test('a device with no stored session is signed out', () async {

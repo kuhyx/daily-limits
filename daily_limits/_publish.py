@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Krzysztof Rudnicki
-"""Publishing today's report to ``daily_limits/status.json`` for the phone.
+"""Publishing today's report, sealed, to ``daily_limits-e2e/status.json``.
 
 The payload is the frozen JSON contract plus ``published_at`` (unix seconds)
 and ``device_id`` (this install's persisted uuid). It is written when its
@@ -19,7 +19,7 @@ from crdt_sync import load_device_identity
 from daily_limits import _paths, _state, _sync_client
 
 if TYPE_CHECKING:
-    from crdt_sync import FirebaseSyncClient
+    from crdt_sync import EncryptingStore
 
     from daily_limits._report import Report
 
@@ -50,7 +50,7 @@ def is_due(report: Report, *, now: int) -> bool:
     return last.get("digest") != digest(report)
 
 
-def publish(client: FirebaseSyncClient, report: Report, *, now: int) -> None:
+def publish(client: EncryptingStore, report: Report, *, now: int) -> None:
     """Write ``report`` to the status path, then record what was published.
 
     The local record is written only after the PUT succeeded, so a failed
