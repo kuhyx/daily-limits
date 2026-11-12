@@ -13,13 +13,13 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.14.0
+      ref: crdt_sync_dart-v0.14.1
       path: crdt_sync_dart
   # Keystore-backed Firebase session, account store and per-install device id.
   crdt_sync_flutter:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_flutter-v0.8.0
+      ref: crdt_sync_flutter-v0.8.1
       path: crdt_sync_flutter
   # The shared palette, scales and theme. No local theme file to drift.
   design_system:
@@ -39,7 +39,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.7.2
+      ref: sync_settings_ui-v0.7.3
       path: sync_settings_ui
   timezone: 0.11.2
   uuid: 4.6.0
