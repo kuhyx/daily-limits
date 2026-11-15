@@ -4,7 +4,9 @@ import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/actions_card.dart';
 import 'package:daily_limits/screens/home_screen.dart';
 import 'package:daily_limits/screens/settings_screen.dart';
+import 'package:daily_limits/screens/status_cards.dart';
 import 'package:daily_limits/screens/status_view.dart';
+import 'package:daily_limits/services/requests.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +24,11 @@ void main() {
     await tester.pumpWidget(MaterialApp(theme: buildDarkTheme(), home: home));
   }
 
+  Future<void> openAsk(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('tile-ask')));
+    await tester.pumpAndSettle();
+  }
+
   String? errorLabel(WidgetTester tester) =>
       tester.widget<Icon>(find.byKey(const Key('home-error'))).semanticLabel;
 
@@ -32,7 +39,7 @@ void main() {
     await pump(tester, HomeScreen(controller: controller));
     expect(controller.starts, 1);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byType(ActionsCard), findsNothing);
+    expect(find.byKey(const Key('tile-ask')), findsNothing);
   });
 
   testWidgets('not signed in: empty state and disabled actions', (
@@ -41,7 +48,7 @@ void main() {
     final controller = FakeController(emptyOutcome(signedIn: false));
     await pump(tester, HomeScreen(controller: controller));
     expect(find.byKey(const Key('home-signed-out')), findsOneWidget);
-    expect(find.byType(StatusView), findsNothing);
+    await openAsk(tester);
     final refresh = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(refresh.onPressed, isNull);
   });
@@ -55,8 +62,11 @@ void main() {
     final lock = find.byKey(const Key('home-e2e'));
     expect(tester.widget<E2ePassphraseButton>(lock).locked, isTrue);
     expect(find.byIcon(Icons.lock), findsOneWidget);
+    await openAsk(tester);
     final refresh = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(refresh.onPressed, isNull);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
     final before = controller.refreshes;
     await tester.tap(lock);
     await tester.pumpAndSettle();
@@ -112,7 +122,9 @@ void main() {
       outcomeWith(published: published, fetchedAt: fetched),
     );
     await pump(tester, HomeScreen(controller: controller));
-    expect(find.byType(StatusView), findsOneWidget);
+    expect(find.byKey(const Key('tile-shutdown')), findsOneWidget);
+    expect(find.byKey(const Key('tile-ask')), findsOneWidget);
+    await openAsk(tester);
     expect(find.byType(ActionsCard), findsOneWidget);
     expect(find.byKey(const Key('home-empty')), findsNothing);
     expect(find.byIcon(Icons.upload), findsOneWidget);
@@ -139,7 +151,11 @@ void main() {
       ),
     );
     final before = controller.refreshes;
-    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+    await tester.fling(
+      find.byType(SingleChildScrollView),
+      const Offset(0, 400),
+      1000,
+    );
     await tester.pumpAndSettle();
     expect(controller.refreshes, before + 1);
   });
@@ -204,5 +220,66 @@ void main() {
     expect(find.byKey(const Key('home-signed-out')), findsOneWidget);
     // Unmount: cancels the controller's once-a-minute timer.
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('tap and long-press open the same sheet per tile', (
+    tester,
+  ) async {
+    final controller = FakeController(outcomeWith(published: DateTime.now()));
+    await pump(tester, HomeScreen(controller: controller));
+    for (final (key, card) in [
+      ('tile-shutdown', ShutdownCard),
+      ('tile-gaming', GamingCard),
+      ('tile-earners', EarnersCard),
+    ]) {
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      expect(find.byType(card), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      await tester.longPress(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      expect(find.byType(card), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('no status: tiles read ? and open nothing', (tester) async {
+    final controller = FakeController(emptyOutcome());
+    await pump(tester, HomeScreen(controller: controller));
+    expect(find.text('?'), findsNWidgets(3));
+    await tester.tap(find.byKey(const Key('tile-gaming')));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+  });
+
+  testWidgets('offline PC: banner and greyed tiles', (tester) async {
+    final old = DateTime.now().subtract(const Duration(hours: 3));
+    final controller = FakeController(outcomeWith(published: old));
+    await pump(tester, HomeScreen(controller: controller));
+    expect(find.byKey(const Key('status-offline')), findsOneWidget);
+    expect(find.byType(GreyedOut), findsOneWidget);
+  });
+
+  testWidgets('ask tile shows a pending spinner and a timeout mark', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    SentRequest req(RequestKind k, {bool timedOut = false}) =>
+        SentRequest(id: 'x', kind: k, createdAt: now, timedOut: timedOut);
+    final controller = FakeController(
+      outcomeWith(published: now, requests: [req(RequestKind.refresh)]),
+    );
+    await pump(tester, HomeScreen(controller: controller));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    controller.show(
+      outcomeWith(
+        published: now,
+        requests: [req(RequestKind.restDay, timedOut: true)],
+      ),
+    );
+    await tester.pump();
+    expect(find.byIcon(Icons.schedule), findsOneWidget);
   });
 }

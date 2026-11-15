@@ -37,39 +37,60 @@ class StatusView extends StatelessWidget {
       ],
     );
     if (!offline) return body;
-    final theme = Theme.of(context);
-    final since = hhmm(status.publishedAt);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(
-          key: const Key('status-offline'),
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            // Desktop with a slash + the last publish time: the PC is off and
-            // the cards below are its last values.
-            child: GlyphValue(
-              icon: Icons.desktop_access_disabled,
-              value: since,
-              spoken:
-                  'PC offline since $since, showing the last values '
-                  'it published',
-            ),
-          ),
-        ),
+        OfflineBanner(since: status.publishedAt),
         const SizedBox(height: AppSpacing.md),
-        // Greyed: desaturated and dimmed, so stale numbers never read as live.
-        Opacity(
-          opacity: 0.5,
-          child: ColorFiltered(
-            colorFilter: const ColorFilter.matrix(_greyscale),
-            child: body,
-          ),
-        ),
+        GreyedOut(child: body),
       ],
     );
   }
+}
+
+/// The "PC is off, these are its last values" card.
+class OfflineBanner extends StatelessWidget {
+  /// Creates the banner.
+  const new({required this.since, super.key});
+
+  /// When the PC last published.
+  final DateTime since;
+
+  @override
+  Widget build(BuildContext context) {
+    final at = hhmm(since);
+    return Card(
+      key: const Key('status-offline'),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        // Desktop with a slash + the last publish time.
+        child: GlyphValue(
+          icon: Icons.desktop_access_disabled,
+          value: at,
+          spoken: 'PC offline since $at, showing the last values it published',
+        ),
+      ),
+    );
+  }
+}
+
+/// Desaturated and dimmed, so stale numbers never read as live.
+class GreyedOut extends StatelessWidget {
+  /// Creates the wrapper.
+  const new({required this.child, super.key});
+
+  /// What to grey.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+    opacity: 0.5,
+    child: ColorFiltered(
+      colorFilter: const ColorFilter.matrix(_greyscale),
+      child: child,
+    ),
+  );
 }
 
 const List<double> _greyscale = [

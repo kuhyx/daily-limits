@@ -5,10 +5,12 @@ import 'dart:async';
 
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:daily_limits/model/status.dart';
-import 'package:daily_limits/screens/actions_card.dart';
+import 'package:daily_limits/screens/home_sheets.dart';
+import 'package:daily_limits/screens/home_tile.dart';
 import 'package:daily_limits/screens/settings_screen.dart';
 import 'package:daily_limits/screens/status_view.dart';
 import 'package:daily_limits/services/limits_controller.dart';
+import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_once.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
@@ -79,74 +81,146 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       body: ListenableBuilder(
         listenable: _controller,
-        builder: (context, _) => RefreshIndicator(
-          onRefresh: _controller.refresh,
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            children: _content(context, _controller.outcome),
-          ),
-        ),
+        builder: (context, _) => _body(context, _controller.outcome),
       ),
     );
   }
 
-  List<Widget> _content(BuildContext context, SyncOutcome? outcome) {
+  Widget _body(BuildContext context, SyncOutcome? outcome) {
     if (outcome == null) {
-      return const [
-        Padding(
-          padding: EdgeInsets.all(AppSpacing.xl),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      ];
+      return const Center(child: CircularProgressIndicator());
     }
-    final now = DateTime.now();
     final status = outcome.status;
     final error = outcome.parseError ?? outcome.cache.lastError;
-    return [
-      if (!outcome.signedIn)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
-          child: Center(
+    final offline = status?.isOffline(DateTime.now()) ?? false;
+    Widget grid = LayoutBuilder(
+      builder: (context, box) => RefreshIndicator(
+        onRefresh: _controller.refresh,
+        // Zero scroll extent: the pull gesture survives, nothing scrolls.
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: box.maxHeight,
+            child: FitGrid(
+              columns: 2,
+              itemCount: 4,
+              itemBuilder: (context, i) => _tile(context, outcome, i),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (offline) grid = GreyedOut(child: grid);
+    return Column(
+      children: [
+        if (!outcome.signedIn)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
             child: Icon(
               Icons.cloud_off,
               key: Key('home-signed-out'),
-              size: 64,
+              size: 48,
               color: Colors.grey,
               semanticLabel: 'Not signed in',
             ),
-          ),
-        )
-      else if (status == null && outcome.parseError == null)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
-          child: Center(
+          )
+        else if (status == null && outcome.parseError == null)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
             child: Icon(
               Icons.hourglass_empty,
               key: Key('home-empty'),
-              size: 64,
+              size: 48,
               color: Colors.grey,
               semanticLabel: 'Nothing published yet',
             ),
           ),
-        ),
-      if (status != null) StatusView(status: status, now: now),
-      if (error != null) ...[
-        const SizedBox(height: AppSpacing.md),
-        Icon(
-          Icons.error_outline,
-          key: const Key('home-error'),
-          color: Theme.of(context).colorScheme.error,
-          semanticLabel: error,
+        if (offline && status != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: OfflineBanner(since: status.publishedAt),
+          ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Icon(
+              Icons.error_outline,
+              key: const Key('home-error'),
+              color: Theme.of(context).colorScheme.error,
+              semanticLabel: error,
+            ),
+          ),
+        Expanded(child: grid),
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: _Footer(outcome: outcome, status: status),
         ),
       ],
-      const SizedBox(height: AppSpacing.md),
-      ActionsCard(
-        controller: _controller,
-        signedIn: outcome.signedIn && !outcome.locked,
-      ),
-      const SizedBox(height: AppSpacing.md),
-      _Footer(outcome: outcome, status: status),
-    ];
+    );
+  }
+
+  Widget _tile(BuildContext context, SyncOutcome outcome, int i) {
+    final status = outcome.status;
+    void open(HomeSheet s) => unawaited(showHomeSheet(context, _controller, s));
+    switch (i) {
+      case 0:
+        return HomeTile(
+          key: const Key('tile-shutdown'),
+          icon: Icons.power_settings_new,
+          spoken: 'Shutdown',
+          value: status == null ? '?' : (status.applied ?? '--:--'),
+          onOpen: status == null ? null : () => open(HomeSheet.shutdown),
+        );
+      case 1:
+        final left = status?.leftMinutes;
+        return HomeTile(
+          key: const Key('tile-gaming'),
+          icon: Icons.sports_esports,
+          spoken: 'Gaming',
+          value: status == null || left == null ? '?' : compactMinutes(left),
+          onOpen: status == null ? null : () => open(HomeSheet.gaming),
+        );
+      case 2:
+        final earners = status?.earners ?? const <EarnerState>[];
+        final done = earners.where((e) => e.status == 'done').length;
+        return HomeTile(
+          key: const Key('tile-earners'),
+          icon: Icons.emoji_events,
+          spoken: 'Earners',
+          value: status == null ? '?' : '$done/${earners.length}',
+          onOpen: status == null ? null : () => open(HomeSheet.earners),
+        );
+      default:
+        return HomeTile(
+          key: const Key('tile-ask'),
+          icon: Icons.send,
+          spoken: 'Ask the PC',
+          badge: _askBadge(context),
+          onOpen: () => open(HomeSheet.ask),
+        );
+    }
+  }
+
+  /// A spinner while a request waits, a warning once one got no answer.
+  Widget? _askBadge(BuildContext context) {
+    final reqs = [
+      _controller.latest(RequestKind.refresh),
+      _controller.latest(RequestKind.restDay),
+    ].whereType<SentRequest>();
+    if (reqs.any((r) => r.isPending)) {
+      return const SizedBox.square(
+        dimension: AppSpacing.lg,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (reqs.any((r) => r.timedOut && r.result == null)) {
+      return Icon(
+        Icons.schedule,
+        color: context.statusColors.warning,
+        semanticLabel: 'No answer yet',
+      );
+    }
+    return null;
   }
 }
 
