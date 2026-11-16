@@ -7,7 +7,7 @@ library;
 import 'package:daily_limits/services/limits_controller.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The two actions. The PC enforces; these only ask.
 class ActionsCard extends StatelessWidget {

@@ -3,7 +3,7 @@
 library;
 
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A small glyph, then [value]; [spoken] is what a screen reader says.
 class GlyphValue extends StatelessWidget {

@@ -8,7 +8,7 @@ import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/status_parts.dart';
 import 'package:daily_limits/ui/earner_icons.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Applied shutdown, the registry's answer when it differs, floor → ceiling.
 class ShutdownCard extends StatelessWidget {

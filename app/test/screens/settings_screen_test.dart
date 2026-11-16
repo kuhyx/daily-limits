@@ -1,8 +1,8 @@
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:daily_limits/screens/settings_screen.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sync_settings_ui/sync_settings_ui.dart';
 
 import '../support/fakes.dart';

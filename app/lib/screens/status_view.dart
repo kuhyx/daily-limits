@@ -6,7 +6,7 @@ import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/status_cards.dart';
 import 'package:daily_limits/screens/status_parts.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders a [DailyStatus].
 class StatusView extends StatelessWidget {

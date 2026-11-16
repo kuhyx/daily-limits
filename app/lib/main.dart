@@ -9,7 +9,7 @@ import 'package:daily_limits/screens/home_screen.dart';
 import 'package:daily_limits/services/background.dart';
 import 'package:daily_limits/services/notifier.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -7,7 +7,7 @@ import 'package:daily_limits/screens/actions_card.dart';
 import 'package:daily_limits/screens/status_cards.dart';
 import 'package:daily_limits/services/limits_controller.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Which sheet a tile opens.
 enum HomeSheet {

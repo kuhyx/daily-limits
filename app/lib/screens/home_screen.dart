@@ -13,7 +13,7 @@ import 'package:daily_limits/services/limits_controller.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_once.dart';
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The app's home.
 class HomeScreen extends StatefulWidget {
