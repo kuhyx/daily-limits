@@ -46,6 +46,7 @@ Fixed: the i3blocks block parses it.
 
 ```json
 {"date": "YYYY-MM-DD", "generated_at": 1791532875, "sick": false, "leisure_active": false,
+ "gaming_enforced": true,
  "shutdown": {"applied": "HH:MM|null", "resolved": "HH:MM", "floor": "HH:MM", "ceiling": "HH:MM"},
  "gaming": {"day": "YYYY-MM-DD", "budget_minutes": 180, "used_minutes": 94, "ceiling_minutes": 480},
  "earners": [{"name": "workout", "label": "workout", "status": "done|todo|unknown",
@@ -94,6 +95,12 @@ Fixed: the i3blocks block parses it.
   `label` is leisure-watch's live label for that key (signed
   `$XDG_RUNTIME_DIR/leisure-watch/now.json`), else the key. The i3blocks
   block `leisure_shadow.sh` renders it.
+- `gaming_enforced` is `earned_time.gaming_enforced(gaming.day)` (0.22.0): `false`
+  from 2026-11-16, when the gaming budget was removed and only shutdown time
+  is earned. The `gaming*` and `leisure_shadow` keys stay for old readers but
+  hold history: no summary, popup, shadow alert, splash, phone card, bar block
+  or notification may show them while it is `false`. A payload without the
+  key means `true`.
 - `leisure_active` (Phase 2, contract C6) is
   `earned_time.leisure_active(gaming.day, path=...)`: whether the switch file
   `/etc/leisure-watch/leisure_from` (written by `leisure-watch go-live`) has

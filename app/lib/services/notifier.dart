@@ -98,7 +98,7 @@ Future<void> scheduleShutdownWarnings(DailyStatus? status) async {
 /// already be gone. Records the day in [cache]; the caller saves it.
 Future<void> maybeNotifyGaming(DailyStatus status, LocalCache cache) async {
   final left = status.leftMinutes;
-  if (left == null || left > 10) return;
+  if (!status.gamingEnforced || left == null || left > 10) return;
   if (status.isOffline(DateTime.now())) return;
   if (cache.gamingNotifiedDay == status.gamingDay) return;
   await initNotifications();

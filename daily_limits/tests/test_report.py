@@ -35,6 +35,7 @@ CONTRACT_KEYS = {
     "generated_at",
     "sick",
     "leisure_active",
+    "gaming_enforced",
     "shutdown",
     "gaming",
     "earners",

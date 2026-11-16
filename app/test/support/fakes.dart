@@ -77,12 +77,14 @@ String statusJson({
   int budget = 300,
   int? used = 120,
   int ceilingMinutes = 480,
+  bool? gamingEnforced,
   List<Map<String, Object?>>? earners,
   List<Map<String, Object?>>? todo,
 }) => jsonEncode({
   'date': date ?? _iso(published),
   'published_at': published.millisecondsSinceEpoch / 1000,
   'device_id': 'pc',
+  'gaming_enforced': ?gamingEnforced,
   'shutdown': {
     'applied': applied,
     'resolved': resolved,

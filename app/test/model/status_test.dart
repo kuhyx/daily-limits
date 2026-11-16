@@ -32,6 +32,19 @@ void main() {
       expect(s.todo.single.status, 'todo');
     });
 
+    test('gaming_enforced defaults to true and reads false', () {
+      expect(
+        DailyStatus.parse(statusJson(published: published)).gamingEnforced,
+        isTrue,
+      );
+      expect(
+        DailyStatus.parse(
+          statusJson(published: published, gamingEnforced: false),
+        ).gamingEnforced,
+        isFalse,
+      );
+    });
+
     test('fills optional values with their defaults', () {
       final s = DailyStatus.parse(
         jsonEncode({

@@ -22,6 +22,13 @@ void main() {
       expect(widgetLine(status(), now), '$kShutdownIcon 22:00 · 🎮 3h00 · +💪');
     });
 
+    test('no gaming part once the budget is gone', () {
+      final off = DailyStatus.parse(
+        statusJson(published: now, gamingEnforced: false),
+      );
+      expect(widgetLine(off, now), '$kShutdownIcon 22:00 · +💪');
+    });
+
     test('shows the budget when use is unknown, and no empty extend part', () {
       expect(
         widgetLine(status(used: null, todo: const []), now),

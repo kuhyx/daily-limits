@@ -25,6 +25,7 @@ def report(
     statuses: tuple[Status, ...] = ("done", "todo", "unknown"),
     shadow_left: int | None = 192,
     leisure_active: bool = False,
+    gaming_enforced: bool = True,
 ) -> Report:
     """A report with one earner per status in ``statuses``."""
     names = [f"e{index}" for index in range(len(statuses))]
@@ -43,6 +44,7 @@ def report(
         "generated_at": 1791532875,
         "sick": sick,
         "leisure_active": leisure_active,
+        "gaming_enforced": gaming_enforced,
         "shutdown": {
             "applied": applied,
             "resolved": resolved,

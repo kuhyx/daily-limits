@@ -98,6 +98,14 @@ void main() {
       expect(cache.gamingNotifiedDay, s.gamingDay);
     });
 
+    test('stays silent once the budget is gone', () async {
+      final off = DailyStatus.parse(
+        statusJson(published: DateTime.now(), used: 300, gamingEnforced: false),
+      );
+      await maybeNotifyGaming(off, LocalCache());
+      expect(log.named('show'), isEmpty);
+    });
+
     test('shows 0m at zero', () async {
       await maybeNotifyGaming(status(used: 300), LocalCache());
       expect(log.titles('show'), ['🎮 0m']);

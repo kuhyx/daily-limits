@@ -61,18 +61,23 @@ def heading(report: Report) -> str:
 
 def summary(report: Report) -> str:
     """The multi-line text the bare ``daily-limits`` command prints."""
-    lines = [heading(report), _shutdown_line(report), _gaming_line(report)]
+    enforced = report["gaming_enforced"]
+    lines = [heading(report), _shutdown_line(report)]
+    if enforced:
+        lines.append(_gaming_line(report))
     word = budget_word(report).lower()
     lines.append("")
     lines.append("Earners")
     for row in report["earners"]:
         mark = _MARK[row["status"]]
         # A done earner has nothing left to earn: show no "+0m", like the bar.
-        amounts = " " * 30
+        amounts = " " * (30 if enforced else 15)
         if row["status"] != "done":
             shutdown = duration(row["shutdown_minutes"])
             gaming = duration(row["gaming_minutes"])
-            amounts = f"+{shutdown:>5} shutdown  +{gaming:>5} {word}"
+            amounts = f"+{shutdown:>5} shutdown"
+            if enforced:
+                amounts += f"  +{gaming:>5} {word}"
         lines.append(
             f"  {mark} {row['label']:<11} {amounts}   {_STATUS_WORD[row['status']]}"
         )

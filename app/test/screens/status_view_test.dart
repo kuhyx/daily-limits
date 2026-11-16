@@ -1,4 +1,5 @@
 import 'package:daily_limits/model/status.dart';
+import 'package:daily_limits/screens/status_cards.dart';
 import 'package:daily_limits/screens/status_view.dart';
 import 'package:daily_limits/ui/earner_icons.dart';
 import 'package:design_system/design_system.dart';
@@ -26,6 +27,13 @@ void main() {
       ),
     );
   }
+
+  testWidgets('no gaming budget: no gaming card', (tester) async {
+    await pump(tester, statusJson(published: now, gamingEnforced: false));
+    expect(find.byType(GamingCard), findsNothing);
+    expect(find.byIcon(Icons.sports_esports), findsNothing);
+    expect(find.byIcon(Icons.power_settings_new), findsOneWidget);
+  });
 
   testWidgets('online: all sections, no offline banner or greyscale', (
     tester,

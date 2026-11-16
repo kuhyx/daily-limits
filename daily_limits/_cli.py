@@ -101,9 +101,10 @@ def _cached_focus(target: Path) -> object:
 def _shadow_alerts(report: _report.Report) -> None:
     """The shadow week's alerts; a failure there never costs the Firebase tick.
 
-    None once the leisure budget is live: the enforcer warns for real then.
+    None once the leisure budget is live (the enforcer warns for real then) or
+    gone (no gaming budget: nothing to warn about).
     """
-    if report["leisure_active"]:
+    if report["leisure_active"] or not report["gaming_enforced"]:
         return
     try:
         _alerts.tick(report["leisure_shadow"], _leisure_now.read())

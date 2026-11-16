@@ -26,8 +26,10 @@ class StatusView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ShutdownCard(status: status),
-        const SizedBox(height: AppSpacing.md),
-        GamingCard(status: status, today: isoDay(now)),
+        if (status.gamingEnforced) ...[
+          const SizedBox(height: AppSpacing.md),
+          GamingCard(status: status, today: isoDay(now)),
+        ],
         if (status.todo.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
           ExtendLine(todo: status.todo),

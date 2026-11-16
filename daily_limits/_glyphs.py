@@ -37,3 +37,8 @@ _EARNER: Final = {
 def earner(name: str) -> str:
     """The glyph for earner ``name``; a bullet for one not mapped here."""
     return _EARNER.get(name, "•")
+
+
+def budget(*, leisure: bool) -> str:
+    """The leisure sun once the leisure budget is live (Phase 2), else the pawn."""
+    return LEISURE if leisure else GAMING

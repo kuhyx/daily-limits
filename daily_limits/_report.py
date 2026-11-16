@@ -86,6 +86,10 @@ class Report(TypedDict):
     generated_at: int
     sick: bool
     leisure_active: bool
+    # False from 2026-11-16 (gaming day): no gaming budget exists, so no
+    # reader may show the ``gaming`` / ``leisure_shadow`` numbers. Absent in
+    # older payloads: readers treat that as True.
+    gaming_enforced: bool
     shutdown: Shutdown
     gaming: Gaming
     earners: list[EarnerRow]
@@ -112,10 +116,11 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
 
     On a sick day (earned_time 0.13.0) the walk starts from the resolved
     shutdown (20:00 plus what is done) and each step adds the earner's gaming
-    pay still left: credits stack on 20:00 at gaming pay.
+    pay still left: credits stack on 20:00 at gaming pay, or at shutdown pay
+    once the gaming budget is gone (earned_time 0.22.0).
     """
     rows: list[TodoRow] = []
-    sick = resolution.sick
+    stacks_gaming = resolution.sick and resolution.gaming_enforced
     shutdown = resolution.shutdown_minutes
     for term in resolution.terms:
         item: Earner = term.earner
@@ -123,7 +128,7 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
             continue
         left = (
             _compat.gaming_left(item, term.answer)
-            if sick
+            if stacks_gaming
             else _compat.shutdown_left(item, term.answer, resolution.day)
         )
         shutdown = min(_compat.shutdown_ceiling(resolution.day), shutdown + left)
@@ -172,6 +177,7 @@ def build(now: datetime | None = None) -> Report:
         "leisure_active": earned_time.leisure_active(
             game_day, path=_paths.LEISURE_FROM_FILE
         ),
+        "gaming_enforced": gaming.gaming_enforced,
         "shutdown": {
             "applied": None if applied is None else hhmm(applied),
             "resolved": hhmm(resolution.shutdown_minutes),

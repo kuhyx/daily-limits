@@ -102,7 +102,7 @@ class Popup:
         self._root.after(_REFRESH_MS, self.refresh)
 
     def _draw(self, report: Report) -> None:
-        shut, game = report["shutdown"], report["gaming"]
+        shut = report["shutdown"]
         # Today's date; the sick-day cross sits by the button below.
         self._label(self._body, report["date"], "label", fg=tok.MUTED_ON_DARK).pack(
             anchor="w"
@@ -119,29 +119,31 @@ class Popup:
         self._label(self._body, detail, "caption", fg=tok.MUTED_ON_DARK).pack(
             anchor="w"
         )
-        used = game["used_minutes"]
-        played = "?" if used is None else _render.duration(used)
-        self._label(
-            self._body,
-            f"{_budget_glyph(report)} {played} / "
-            f"{_render.duration(game['budget_minutes'])}",
-            "subtitle",
-            bold=True,
-        ).pack(anchor="w", pady=(tok.MD, 0))
-        # The gaming day's date only when it is not today (before 06:00).
-        day = "" if game["day"] == report["date"] else f"   {game['day']}"
-        self._label(
-            self._body,
-            f"{gl.CEILING} {_render.duration(game['ceiling_minutes'])}{day}",
-            "caption",
-            fg=tok.MUTED_ON_DARK,
-        ).pack(anchor="w")
+        if report["gaming_enforced"]:
+            self._draw_budget(report)
         self._draw_earners(report)
         self._draw_todo(report)
         self._draw_sick_days(report)
 
+    def _draw_budget(self, report: Report) -> None:
+        """Used / budget and the ceiling; only while a gaming budget exists."""
+        game = report["gaming"]
+        used = game["used_minutes"]
+        played = "?" if used is None else _render.duration(used)
+        budget = _render.duration(game["budget_minutes"])
+        # The gaming day's date only when it is not today (before 06:00).
+        day = "" if game["day"] == report["date"] else f"   {game['day']}"
+        ceiling = _render.duration(game["ceiling_minutes"])
+        subtitle = f"{gl.budget(leisure=report['leisure_active'])} {played} / {budget}"
+        self._label(self._body, subtitle, "subtitle", bold=True).pack(
+            anchor="w", pady=(tok.MD, 0)
+        )
+        self._label(
+            self._body, f"{gl.CEILING} {ceiling}{day}", "caption", fg=tok.MUTED_ON_DARK
+        ).pack(anchor="w")
+
     def _draw_earners(self, report: Report) -> None:
-        budget = _budget_glyph(report)
+        budget = gl.budget(leisure=report["leisure_active"])
         card = tk.Frame(self._body, bg=tok.INK_RAISED_1, padx=tok.MD, pady=tok.SM)
         card.pack(fill="x", pady=(tok.MD, 0))
         for row, earner in enumerate(report["earners"]):
@@ -163,6 +165,8 @@ class Popup:
                     "body",
                 ),
             )
+            if not report["gaming_enforced"]:
+                cells = (*cells[:2], cells[3])
             for column, (text, fg, role) in enumerate(cells):
                 tinted = self._tint(report, earner["name"], fg)
                 self._link(
@@ -230,11 +234,6 @@ class Popup:
                 side="left", padx=(tok.MD, 0)
             )
         notice.pack(side="left", padx=(tok.MD, 0))
-
-
-def _budget_glyph(report: Report) -> str:
-    """The leisure sun once the leisure budget is live (Phase 2), else the pawn."""
-    return gl.LEISURE if report.get("leisure_active") else gl.GAMING
 
 
 def run() -> int:

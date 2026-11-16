@@ -23,7 +23,7 @@ String widgetLine(DailyStatus? status, DateTime now) {
   if (status == null) return kWidgetNoData;
   final parts = <String>[
     '$kShutdownIcon ${status.applied ?? '--:--'}',
-    _gamingPart(status),
+    if (status.gamingEnforced) _gamingPart(status),
   ];
   final extend = [for (final t in status.todo) '+${earnerIcon(t.name)}'];
   if (extend.isNotEmpty) parts.add(extend.join(' '));

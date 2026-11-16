@@ -38,6 +38,8 @@ Read README.md first, then DOCS-sources.md.
   `earned_time.leisure_active(gaming_day, path=_paths.LEISURE_FROM_FILE)`;
   nothing here opens the switch file. Tests point it (and earned_time's own
   `LEISURE_FROM_PATH`) at a missing temp file; `leisure_on` writes it.
+- **No gaming budget from 2026-11-16.** `gaming_enforced` (the gaming day's
+  `earned_time.gaming_enforced`) false: render nothing gaming/leisure, anywhere.
 - **Gaming is per gaming day** (06:00 boundary, `gaming.day`). Shutdown is per
   calendar day.
 - Tests must redirect every `_paths` constant. They must never read the real

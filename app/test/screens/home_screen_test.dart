@@ -245,6 +245,20 @@ void main() {
     }
   });
 
+  testWidgets('no gaming budget: the gaming tile is gone', (tester) async {
+    final status = DailyStatus.parse(
+      statusJson(published: DateTime.now(), gamingEnforced: false),
+    );
+    final controller = FakeController(
+      outcomeWith(published: DateTime.now(), status: status),
+    );
+    await pump(tester, HomeScreen(controller: controller));
+    expect(find.byKey(const Key('tile-gaming')), findsNothing);
+    for (final key in ['tile-shutdown', 'tile-earners', 'tile-ask']) {
+      expect(find.byKey(Key(key)), findsOneWidget);
+    }
+  });
+
   testWidgets('no status: tiles read ? and open nothing', (tester) async {
     final controller = FakeController(emptyOutcome());
     await pump(tester, HomeScreen(controller: controller));

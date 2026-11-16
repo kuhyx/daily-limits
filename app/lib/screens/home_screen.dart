@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               height: box.maxHeight,
               child: FitGrid(
                 columns: 2,
-                itemCount: 4,
+                itemCount: (status?.gamingEnforced ?? true) ? 4 : 3,
                 itemBuilder: (context, i) => _tile(context, outcome, i),
               ),
             ),
@@ -166,7 +166,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _tile(BuildContext context, SyncOutcome outcome, int i) {
     final status = outcome.status;
     void open(HomeSheet s) => unawaited(showHomeSheet(context, _controller, s));
-    switch (i) {
+    // Without a gaming budget the gaming tile (slot 1) is not built.
+    final slot = (status?.gamingEnforced ?? true) || i == 0 ? i : i + 1;
+    switch (slot) {
       case 0:
         return HomeTile(
           key: const Key('tile-shutdown'),

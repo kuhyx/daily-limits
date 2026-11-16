@@ -79,6 +79,7 @@ class DailyStatus {
     required this.ceilingMinutes,
     required this.earners,
     required this.todo,
+    this.gamingEnforced = true,
   });
 
   /// Parses the JSON text stored at `daily_limits/status.json`.
@@ -103,6 +104,7 @@ class DailyStatus {
         gaming['ceiling_minutes'],
         'ceiling_minutes',
       ).round(),
+      gamingEnforced: root['gaming_enforced'] as bool? ?? true,
       earners: [
         for (final e in _list(root['earners'], 'earners'))
           EarnerState(
@@ -148,6 +150,10 @@ class DailyStatus {
 
   /// The gaming day (06:00 boundary), `YYYY-MM-DD`.
   final String gamingDay;
+
+  /// Whether a gaming budget exists at all. False from 2026-11-16: nothing
+  /// gaming is shown. Absent in older payloads, read as true.
+  final bool gamingEnforced;
 
   /// Gaming minutes allowed this gaming day.
   final int budgetMinutes;
