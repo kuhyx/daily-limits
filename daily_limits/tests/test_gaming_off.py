@@ -116,3 +116,16 @@ def test_no_splash(tmp_path: Path) -> None:
     report = json.loads(cache.read_text(encoding="utf-8"))
     cache.write_text(json.dumps({**report, "gaming_enforced": False}), encoding="utf-8")
     assert _splash.read_shadow(cache) is None
+
+
+def test_leisure_watch_is_not_read_without_a_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Nothing consumes its labels, so a stale ``now.json`` must not warn."""
+    reads: list[object] = []
+    monkeypatch.setattr(_leisure_now, "read", lambda **_kw: reads.append(1))
+    _nothing_done(monkeypatch)
+    _report.build(_samples.at("2026-11-16T10:00"))
+    assert reads == []
+    _report.build(_samples.at("2026-10-09T10:00"))
+    assert reads == [1]

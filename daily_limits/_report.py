@@ -213,7 +213,12 @@ def build(now: datetime | None = None) -> Report:
         "leisure_shadow": _shadow.build(
             _paths.PLAYTIME_STATE,
             game_day,
-            _shadow.labels(_leisure_now.read(now=moment.timestamp())),
+            # Nothing shows the labels without a budget: leave leisure-watch be.
+            _shadow.labels(
+                _leisure_now.read(now=moment.timestamp())
+                if gaming.gaming_enforced
+                else None
+            ),
         ),
     }
     focus = _focus.fetch(day)
