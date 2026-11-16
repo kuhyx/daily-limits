@@ -29,7 +29,7 @@ dependencies:
       path: design_system
   flutter:
     sdk: flutter
-  flutter_local_notifications: 23.0.1
+  flutter_local_notifications: 23.0.2
   home_widget: 0.10.0
   # Flutter 3.50 deprecates package:flutter/material.dart; Material lives here.
   material_ui: 1.11.0
