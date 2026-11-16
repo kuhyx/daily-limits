@@ -93,8 +93,27 @@ installed_version_code() {
 
 # The staged build keeps each gradle call on phone_deploy's warm daemon; the
 # Dart AOT stage is the memory-heavy one, hence the 4 GiB cap.
+#
+# Every stage is its own phone_deploy process. Without a claude ancestor (a
+# board or Ship run) phone_lease names each one pid:N, so install waited on
+# prep's own package lease and gave up (exit 40). One owner for the whole run;
+# inside a claude session the session's own id already is one.
+claim_lease_owner() {
+    [[ -n ${PHONE_LEASE_OWNER:-} ]] && return 0
+    local pkg_dir="${PHONE_LEASE_PKG_DIR:-$HOME/src/testsAndMisc}" owner
+    owner=$(PYTHONPATH="$pkg_dir" python3 -m python_pkg.phone_lease whoami)
+    [[ $owner == pid:* ]] && owner="daily-limits-deploy:$$"
+    export PHONE_LEASE_OWNER="$owner"
+}
+
 build_and_install() {
     local deploy="$SCRIPTS/phone_deploy.sh" capped="$SCRIPTS/capped.sh" stage
+    claim_lease_owner
+    # A rerun after a failed install reuses the build number, so Gradle is
+    # up to date and leaves the old APK: phone_deploy reads that as a killed
+    # build (exit 34). Build artifacts only, gitignored.
+    rm -f "$LIVE/app/build/app/outputs/flutter-apk/app-release.apk" \
+        "$LIVE/app/build/app/outputs/apk/release/app-release.apk"
     ADB_SERIAL="$SERIAL" "$deploy" "$LIVE/app" --release --stage prep
     for stage in dart kotlin assemble; do
         ADB_SERIAL="$SERIAL" CAP_MEM=4G "$capped" "$deploy" "$LIVE/app" --stage "$stage"

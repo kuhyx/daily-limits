@@ -54,6 +54,7 @@ exit 0
 
 PHONE_DEPLOY_STUB = r"""#!/bin/bash
 echo "phone_deploy $*" >> "$STUB_LOG"
+echo "${PHONE_LEASE_OWNER:-unset}" >> "$STUB_LOG.owners"
 [[ "$*" == *"--stage install"* ]] && echo $(( $(cat "$STUB_VC") + 1 )) > "$STUB_VC"
 exit 0
 """
@@ -118,7 +119,14 @@ def rig(tmp_path: Path) -> Rig:
     vc = tmp_path / "vc"
     vc.write_text("7\n")
     log = tmp_path / "calls.log"
+    # phone_lease whoami as a board run sees it: no claude ancestor, so pid:N.
+    lease = tmp_path / "lease_pkg" / "python_pkg" / "phone_lease"
+    lease.mkdir(parents=True)
+    (lease.parent / "__init__.py").write_text("")
+    (lease / "__init__.py").write_text("")
+    (lease / "__main__.py").write_text("import os\nprint(f'pid:{os.getpid()}')\n")
     env = {
+        "PHONE_LEASE_PKG_DIR": str(tmp_path / "lease_pkg"),
         "PATH": f"{bin_dir}:/usr/bin:/bin",
         "HOME": str(home),
         "XDG_RUNTIME_DIR": str(runtime),
@@ -228,3 +236,15 @@ def test_never_uninstalls_or_clears(rig: Rig) -> None:
     for text in [*adb, SCRIPT.read_text()]:
         assert " uninstall" not in text
         assert "pm clear" not in text
+
+
+def test_every_stage_holds_the_lease_as_one_owner(rig: Rig) -> None:
+    # Owner per pid: install waited on prep (40). Stale APK: "killed" build (34).
+    out = rig.home / "src/daily-limits/app/build/app/outputs"
+    apk = out / "apk/release/app-release.apk"
+    _exe(apk, "old")
+    assert rig.run("phone").returncode == 0
+    assert not apk.exists()
+    owners = Path(f"{rig.log}.owners").read_text().split()
+    assert owners == [owners[0]] * 5
+    assert owners[0].startswith("daily-limits-deploy:")
