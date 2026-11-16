@@ -122,4 +122,30 @@ void main() {
     await pump(tester, controller, textScale: 2);
     expectNoVerticalScroll(tester);
   });
+
+  testWidgets(
+    'Android drag: tiles stay put, pull still refreshes',
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+    (tester) async {
+      final now = DateTime.now();
+      final controller = FakeController(
+        outcomeWith(published: now, status: fourEarners(now), fetchedAt: now),
+      );
+      await pump(tester, controller);
+      final tile = find.byKey(const Key('tile-shutdown'));
+      final before = tester.getRect(tile);
+      // Mid-drag, both ways: the Android stretch overscroll would move tiles.
+      for (final dy in [-300.0, 300.0]) {
+        final drag = await tester.startGesture(tester.getCenter(tile));
+        for (var i = 0; i < 10; i++) {
+          await drag.moveBy(Offset(0, dy / 10));
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        expect(tester.getRect(tile), before, reason: 'drag by $dy moved Home');
+        await drag.up();
+        await tester.pumpAndSettle();
+      }
+      expect(controller.refreshes, 1, reason: 'pull-to-refresh lost');
+    },
+  );
 }

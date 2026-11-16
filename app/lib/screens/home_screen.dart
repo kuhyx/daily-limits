@@ -97,14 +97,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       builder: (context, box) => RefreshIndicator(
         onRefresh: _controller.refresh,
         // Zero scroll extent: the pull gesture survives, nothing scrolls.
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: box.maxHeight,
-            child: FitGrid(
-              columns: 2,
-              itemCount: 4,
-              itemBuilder: (context, i) => _tile(context, outcome, i),
+        // No overscroll indicator: Android's stretch would move the tiles.
+        child: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: box.maxHeight,
+              child: FitGrid(
+                columns: 2,
+                itemCount: 4,
+                itemBuilder: (context, i) => _tile(context, outcome, i),
+              ),
             ),
           ),
         ),
