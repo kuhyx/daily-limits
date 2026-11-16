@@ -54,7 +54,7 @@ Read README.md first, then DOCS-sources.md.
 - coverage: `.venv/bin/python -m pytest -q --cov-report=lcov:coverage.lcov`
 - coverage-gaps: `coverage-gaps coverage.lcov`
 - app (Flutter, `app/`; fvm SDK first, see `app/README.md`):
-  `cd app && PATH=~/sdk/fvm/versions/3.50.0/bin:$PATH flutter analyze --fatal-infos && flutter test -j 2 --coverage`
+  `cd app && PATH=~/sdk/fvm/versions/3.50.0/bin:$PATH flutter analyze --fatal-infos && flutter test -j 1 --coverage`
 
 Heavy commands go through `~/.claude/scripts/capped.sh`. Dev venv:
 `scripts/setup_dev.sh`.

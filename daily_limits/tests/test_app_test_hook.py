@@ -4,8 +4,10 @@
 At flutter's default concurrency (cores - 2, 14 on kuhy's 16-core PC) the
 test isolates peaked at 2.2 GB: the kernel OOM-killed the frontend server and
 systemd stopped the capped scope with SIGTERM, so the board's checks run died
-with exit -15 in the middle of the hook (2026-11-11). Two at a time peaks at
-1.4 GB.
+with exit -15 in the middle of the hook (2026-11-11). Two at a time peaked at
+1.4 GB then, but 1.6 GB by 2026-11-16 (154 tests): inside pre-commit's one
+scope, on top of the earlier hooks, that hit 2 GiB and died the same way. One
+at a time peaks at 1.3 GB.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from pathlib import Path
 import re
 
 CONFIG = Path(__file__).resolve().parents[2] / ".pre-commit-config.yaml"
-MAX_JOBS = 2
+MAX_JOBS = 1
 
 
 def _app_test_entry() -> str:
