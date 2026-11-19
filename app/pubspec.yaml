@@ -19,20 +19,20 @@ dependencies:
   crdt_sync_flutter:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_flutter-v0.8.2
+      ref: crdt_sync_flutter-v0.9.1
       path: crdt_sync_flutter
   # The shared palette, scales and theme. No local theme file to drift.
   design_system:
     git:
       url: https://github.com/kuhyx/utils
-      ref: design_system-v0.4.0
+      ref: design_system-v0.4.1
       path: design_system
   flutter:
     sdk: flutter
-  flutter_local_notifications: 23.0.2
+  flutter_local_notifications: 23.0.3
   home_widget: 0.10.0
   # Flutter 3.50 deprecates package:flutter/material.dart; Material lives here.
-  material_ui: 1.11.0
+  material_ui: 1.11.1
   # The status cache lives in a JSON file under the app-support directory,
   # shared between the UI isolate and the workmanager isolate. Not
   # shared_preferences: crdt_sync_flutter exact-pins an older release.
@@ -41,7 +41,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.8.2
+      ref: sync_settings_ui-v0.8.4
       path: sync_settings_ui
   timezone: 0.11.2
   uuid: 4.6.0
