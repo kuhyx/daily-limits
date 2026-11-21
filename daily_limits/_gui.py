@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Final
 
-from daily_limits import _focus_open, _render, _report, _sick_picker
+from daily_limits import _focus_open, _leetcode_open, _render, _report, _sick_picker
 from daily_limits import _glyphs as gl
 from daily_limits import _tokens as tok
 
@@ -28,8 +28,11 @@ _STATUS_COLOUR: Final = {
     "todo": tok.WARNING,
     "unknown": tok.MUTED_ON_DARK,
 }
-# The registry name of the focus earner: its row opens the work (see below).
+# The registry name of the focus earner: a missed milestone tints its row.
 _FOCUS: Final = "focus"
+# Rows that open their work on a click, by earner name. Modules, not their
+# ``launch``: it is looked up at click time.
+_OPENERS: Final = {_FOCUS: _focus_open, "leetcode": _leetcode_open}
 
 
 class Popup:
@@ -69,10 +72,6 @@ class Popup:
             parent, text=text, fg=fg, bg=bg, font=self._font(role, bold=bold)
         )
 
-    def _open_focus(self, _event: object = None) -> None:
-        """Click on the focus row: the tutor focus screen and the work URL."""
-        self._warn(_focus_open.launch())
-
     def _warn(self, message: str | None) -> None:
         """A failed launch: a warning glyph by the button, the reason in the log."""
         if message is None:
@@ -82,10 +81,11 @@ class Popup:
         self._notice.configure(text=gl.PROBLEM)
 
     def _link(self, label: tk.Label, name: str) -> tk.Label:
-        """Make ``label`` open the focus work when it is the focus row's."""
-        if name == _FOCUS:
+        """Make ``label`` open its row's work: the focus work, a LeetCode problem."""
+        opener = _OPENERS.get(name)
+        if opener is not None:
             label.configure(cursor="hand2")
-            label.bind("<Button-1>", self._open_focus)
+            label.bind("<Button-1>", lambda _event: self._warn(opener.launch()))
         return label
 
     @staticmethod

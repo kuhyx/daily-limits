@@ -11,7 +11,10 @@ Read README.md first, then DOCS-sources.md.
   `~/.local/state/daily-limits/`. Remote writes: only `daily_limits-e2e/`
   in Firebase, sealed, never plaintext (README "Firebase"). The popup's one button may *launch* the
   sickdays picker (`_sick_picker.py`: `sickdays gui`, detached, a subprocess,
-  never an import); that program owns its own writes.
+  never an import); that program owns its own writes. Two rows open their work
+  the same way: `focus` (`_focus_open.py`: `focus_project.open`) and `leetcode`
+  (`_leetcode_open.py`: `leetcode_guard.open_cli`, the first suggested problem
+  in the browser; its exit status is read, so a failed open shows the warning).
 - **The shadow week only shows.** `_alerts` may run `notify-send` and launch
   the splash through `systemd-run --user` (unit `daily-limits-shadow-splash`);
   the splash is override-redirect and must never grab or take focus. Its
