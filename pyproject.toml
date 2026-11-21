@@ -11,7 +11,7 @@ requires-python = ">=3.14"
 # Everything else is stdlib, tkinter included.
 dependencies = [
     "earned-time @ git+https://github.com/kuhyx/utils@earned-time-v0.22.0#subdirectory=earned_time",
-    "sickdays @ git+https://github.com/kuhyx/utils@sickdays-v0.5.5#subdirectory=sickdays",
+    "sickdays @ git+https://github.com/kuhyx/utils@sickdays-v0.5.6#subdirectory=sickdays",
     "crdt-sync @ git+https://github.com/kuhyx/utils@crdt-sync-v0.11.1#subdirectory=crdt-sync",
     "focus-project @ git+https://github.com/kuhyx/utils@focus-project-v0.10.0#subdirectory=focus_project",
 ]
