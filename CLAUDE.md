@@ -23,6 +23,10 @@ Read README.md first, then DOCS-sources.md.
   subprocess), never an import, and only with a strictly validated date.
 - **Firebase never breaks the cache.** The cache is written first; any sync
   failure is one warning and exit 0.
+- **A top-up is never a to-do.** An earner with `Earner.topup` (the LeetCode
+  review, earned_time 0.23.0) is listed only on a day it was credited and
+  never appears in `todo` (`_report._shown`): a bonus nobody owed is not a
+  missed task. Key on the property, never on the name.
 - **No hard-coded minutes.** Every number comes from `earned_time` (`EARNERS`,
   `Earner` fields, `resolve()`, the ceiling constants). A registry bump must
   change the output with no code change here.

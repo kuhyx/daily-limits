@@ -31,6 +31,8 @@ _EARNER: Final = {
     "automation": "⚙",
     "tutor": "⚙",
     "focus": "◎",
+    # The LeetCode review top-up: drawn only on a day it was credited.
+    "review": "↻",
 }
 
 

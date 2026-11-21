@@ -27,7 +27,7 @@ from daily_limits import (
 if TYPE_CHECKING:
     from datetime import date
 
-    from earned_time import Earner, Resolution
+    from earned_time import Earner, Resolution, Term
 
     from daily_limits._shadow import LeisureShadow
 
@@ -111,6 +111,15 @@ def _status(item: Earner, answer: int | None) -> Status:
     return "todo" if _compat.units_left(item, answer) else "done"
 
 
+def _shown(term: Term) -> bool:
+    """A top-up (``Earner.topup``) shows only once credited, never as a to-do.
+
+    Not credited and "could not check" both hide it: a bonus nobody owed is
+    not a missed task.
+    """
+    return not term.earner.topup or _status(term.earner, term.answer) == "done"
+
+
 def _todo(resolution: Resolution) -> list[TodoRow]:
     """Not-done earners in registry order, each with the cumulative shutdown.
 
@@ -124,7 +133,9 @@ def _todo(resolution: Resolution) -> list[TodoRow]:
     shutdown = resolution.shutdown_minutes
     for term in resolution.terms:
         item: Earner = term.earner
-        if term.answer is not None and not _compat.units_left(item, term.answer):
+        if item.topup or (
+            term.answer is not None and not _compat.units_left(item, term.answer)
+        ):
             continue
         left = (
             _compat.gaming_left(item, term.answer)
@@ -206,6 +217,7 @@ def build(now: datetime | None = None) -> Report:
                 "gaming_minutes": _compat.gaming_left(term.earner, term.answer),
             }
             for term in resolution.terms
+            if _shown(term)
         ],
         "todo": _todo(resolution),
         # The shadow week (contract C5): the enforcer's would-be numbers for

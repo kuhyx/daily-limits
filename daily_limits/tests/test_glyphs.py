@@ -37,3 +37,13 @@ def test_glyphs_carry_no_words() -> None:
         *(gl.earner(e.name) for e in earned_time.EARNERS),
     ]
     assert [g for g in every if re.search("[A-Za-z]{2,}", g)] == []
+
+
+def test_the_review_top_up_has_its_own_glyph() -> None:
+    # It is outside ``EARNERS`` (a top-up, in the registry from REVIEW_FROM),
+    # so the loop above never sees it: a credited review would draw a bullet.
+    glyph = gl.earner(earned_time.REVIEW.name)
+    others = [gl.earner(e.name) for e in earned_time.all_earners() if not e.topup]
+    assert glyph != "•"
+    assert glyph not in others
+    assert not re.search("[A-Za-z]{2,}", glyph)

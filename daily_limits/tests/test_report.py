@@ -166,7 +166,9 @@ def test_build_defaults_to_now(monkeypatch: pytest.MonkeyPatch) -> None:
     report = _report.build()
     assert report["generated_at"] > 0
     today = date.fromisoformat(report["date"])
-    assert len(report["earners"]) == len(_compat.earners(today))
+    # A top-up is listed only once credited; nothing is credited here.
+    paying = [item for item in _compat.earners(today) if not item.topup]
+    assert len(report["earners"]) == len(paying)
 
 
 def _expected_todo(day: date, start: int, *, sick: bool) -> list[int]:
