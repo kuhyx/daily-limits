@@ -7,6 +7,7 @@ import 'package:daily_limits/services/home_widget_sync.dart';
 import 'package:daily_limits/services/notifier.dart';
 import 'package:daily_limits/services/sync_app.dart';
 import 'package:design_system/design_system.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:sync_settings_ui/sync_settings_ui.dart';
 
@@ -53,6 +54,10 @@ class SettingsScreen extends StatelessWidget {
               await requestNotificationPermission();
               await showTestNotification();
             },
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: AppSpacing.lg),
+            child: Center(child: KuhyCredit()),
           ),
         ],
       ),

@@ -31,6 +31,12 @@ dependencies:
     sdk: flutter
   flutter_local_notifications: 23.0.3
   home_widget: 0.10.0
+  # The shared "Created by kuhy" credit with logo button.
+  kuhy_credit:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: kuhy-credit-v0.3.0
+      path: kuhy_credit/flutter
   # Flutter 3.50 deprecates package:flutter/material.dart; Material lives here.
   material_ui: 1.11.1
   # The status cache lives in a JSON file under the app-support directory,

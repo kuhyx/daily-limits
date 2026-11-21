@@ -13,6 +13,7 @@ import 'package:daily_limits/services/limits_controller.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_once.dart';
 import 'package:design_system/design_system.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The app's home.
@@ -241,7 +242,7 @@ class _Footer extends StatelessWidget {
     final theme = Theme.of(context);
     final fetched = outcome.cache.fetchedAt;
     final published = status?.publishedAt;
-    if (published == null && fetched == null) return const SizedBox.shrink();
+    final hasTimestamps = published != null || fetched != null;
     final muted = theme.colorScheme.onSurfaceVariant;
     final style = theme.textTheme.bodySmall?.copyWith(color: muted);
     // Upload = when the PC published, download = when this phone read it.
@@ -255,14 +256,23 @@ class _Footer extends StatelessWidget {
         ],
       ),
     );
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: AppSpacing.md,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (published != null)
-          stamp(Icons.upload, published, 'Published ${hhmm(published)}'),
-        if (fetched != null)
-          stamp(Icons.download, fetched, 'read ${hhmm(fetched)}'),
+        if (hasTimestamps) ...[
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.md,
+            children: [
+              if (published != null)
+                stamp(Icons.upload, published, 'Published ${hhmm(published)}'),
+              if (fetched != null)
+                stamp(Icons.download, fetched, 'read ${hhmm(fetched)}'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+        ],
+        const KuhyCredit(size: 24),
       ],
     );
   }
