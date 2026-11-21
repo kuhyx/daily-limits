@@ -156,9 +156,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         Expanded(child: grid),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: _Footer(outcome: outcome, status: status),
+        // The footer is the screen's last row: keep it above the gesture bar.
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: _Footer(outcome: outcome, status: status),
+          ),
         ),
       ],
     );

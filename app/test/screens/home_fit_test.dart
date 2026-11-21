@@ -6,6 +6,7 @@ import 'package:daily_limits/model/status.dart';
 import 'package:daily_limits/screens/home_screen.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../support/fake_controller.dart';
@@ -94,6 +95,18 @@ void main() {
     await pump(tester, controller);
     await expectReachable(tester);
     expect(controller.refreshRequests, 1);
+  });
+
+  testWidgets('footer logo clears the gesture nav bar', (tester) async {
+    final now = DateTime.now();
+    final controller = FakeController(
+      outcomeWith(published: now, status: fourEarners(now), fetchedAt: now),
+    );
+    await pump(tester, controller);
+    final logo = tester.getRect(find.byType(KuhyCredit));
+    // 2400 / 2.625 logical height minus the 63 px nav inset.
+    const navTop = (2400 - 63) / 2.625;
+    expect(logo.bottom, lessThanOrEqualTo(navTop));
   });
 
   testWidgets('error line and offline banner still fit', (tester) async {
