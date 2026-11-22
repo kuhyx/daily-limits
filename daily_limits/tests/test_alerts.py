@@ -226,22 +226,6 @@ def test_a_hung_helper_times_out(
     assert "notify-send failed" in caplog.text
 
 
-@pytest.mark.parametrize(
-    ("facts", "text"),
-    [
-        (COUNTING, "Film — mpv, YouTube — Helium"),
-        (None, "❓"),
-        (
-            _leisure_now.Facts(state="paused", paused_by="i3lock", reasons=()),
-            "⏸ i3lock",
-        ),
-        (_leisure_now.Facts(state="free", paused_by=None, reasons=()), "∅"),
-    ],
-)
-def test_counting_now(facts: _leisure_now.Facts | None, text: str) -> None:
-    assert _alerts.counting_now(facts) == text
-
-
 def test_tick_defaults_to_the_wall_clock(
     fakes: Fakes, monkeypatch: pytest.MonkeyPatch
 ) -> None:

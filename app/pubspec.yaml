@@ -25,7 +25,7 @@ dependencies:
   design_system:
     git:
       url: https://github.com/kuhyx/utils
-      ref: design_system-v0.4.1
+      ref: design_system-v0.5.1
       path: design_system
   flutter:
     sdk: flutter
@@ -35,7 +35,7 @@ dependencies:
   kuhy_credit:
     git:
       url: https://github.com/kuhyx/utils
-      ref: kuhy-credit-v0.3.0
+      ref: kuhy-credit-v0.3.2
       path: kuhy_credit/flutter
   # Flutter 3.50 deprecates package:flutter/material.dart; Material lives here.
   material_ui: 1.11.1
@@ -47,7 +47,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.8.4
+      ref: sync_settings_ui-v0.8.5
       path: sync_settings_ui
   timezone: 0.11.2
   uuid: 4.6.0

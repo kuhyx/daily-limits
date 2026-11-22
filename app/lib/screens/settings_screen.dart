@@ -25,35 +25,44 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          ListTile(
-            key: const Key('settings-sync'),
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.sync, semanticLabel: 'Sync settings'),
-            onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(builder: (_) => const _SyncScreen()),
+          Tooltip(
+            message: 'Sync',
+            child: ListTile(
+              key: const Key('settings-sync'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.sync, semanticLabel: 'Sync settings'),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(builder: (_) => const _SyncScreen()),
+              ),
             ),
           ),
-          const ListTile(
-            key: Key('settings-widget'),
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.widgets,
-              semanticLabel: 'Add widget to home screen',
+          const Tooltip(
+            message: 'Widget',
+            child: ListTile(
+              key: Key('settings-widget'),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.widgets,
+                semanticLabel: 'Add widget to home screen',
+              ),
+              onTap: requestPinWidget,
             ),
-            onTap: requestPinWidget,
           ),
-          ListTile(
-            key: const Key('settings-test-notify'),
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.notifications_active,
-              semanticLabel: 'Send a test notification',
+          Tooltip(
+            message: 'Notify',
+            child: ListTile(
+              key: const Key('settings-test-notify'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(
+                Icons.notifications_active,
+                semanticLabel: 'Send a test notification',
+              ),
+              onTap: () async {
+                await initNotifications();
+                await requestNotificationPermission();
+                await showTestNotification();
+              },
             ),
-            onTap: () async {
-              await initNotifications();
-              await requestNotificationPermission();
-              await showTestNotification();
-            },
           ),
           const Padding(
             padding: EdgeInsets.only(top: AppSpacing.lg),

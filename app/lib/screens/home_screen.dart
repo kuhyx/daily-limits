@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:daily_limits/model/status.dart';
+import 'package:daily_limits/screens/home_footer.dart';
 import 'package:daily_limits/screens/home_sheets.dart';
 import 'package:daily_limits/screens/home_tile.dart';
 import 'package:daily_limits/screens/settings_screen.dart';
@@ -13,7 +14,6 @@ import 'package:daily_limits/services/limits_controller.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_once.dart';
 import 'package:design_system/design_system.dart';
-import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The app's home.
@@ -75,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           IconButton(
             key: const Key('home-settings'),
+            tooltip: 'Settings',
             icon: const Icon(Icons.settings, semanticLabel: 'Settings'),
             onPressed: _openSettings,
           ),
@@ -161,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           top: false,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            child: _Footer(outcome: outcome, status: status),
+            child: HomeFooter(outcome: outcome, status: status),
           ),
         ),
       ],
@@ -232,52 +233,5 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     }
     return null;
-  }
-}
-
-class _Footer extends StatelessWidget {
-  const new({required this.outcome, required this.status});
-
-  final SyncOutcome outcome;
-  final DailyStatus? status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final fetched = outcome.cache.fetchedAt;
-    final published = status?.publishedAt;
-    final hasTimestamps = published != null || fetched != null;
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final style = theme.textTheme.bodySmall?.copyWith(color: muted);
-    // Upload = when the PC published, download = when this phone read it.
-    Widget stamp(IconData icon, DateTime at, String spoken) => MergeSemantics(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: muted, semanticLabel: spoken),
-          const SizedBox(width: AppSpacing.xs),
-          ExcludeSemantics(child: Text(hhmm(at), style: style)),
-        ],
-      ),
-    );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (hasTimestamps) ...[
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: AppSpacing.md,
-            children: [
-              if (published != null)
-                stamp(Icons.upload, published, 'Published ${hhmm(published)}'),
-              if (fetched != null)
-                stamp(Icons.download, fetched, 'read ${hhmm(fetched)}'),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-        ],
-        const KuhyCredit(size: 24),
-      ],
-    );
   }
 }

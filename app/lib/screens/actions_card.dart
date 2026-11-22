@@ -46,23 +46,29 @@ class ActionsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FilledButton(
-              key: const Key('action-refresh'),
-              onPressed: signedIn && !(refresh?.isPending ?? false)
-                  ? controller.requestRefresh
-                  : null,
-              child: const Icon(Icons.refresh, semanticLabel: 'Refresh now'),
+            Tooltip(
+              message: 'Refresh',
+              child: FilledButton(
+                key: const Key('action-refresh'),
+                onPressed: signedIn && !(refresh?.isPending ?? false)
+                    ? controller.requestRefresh
+                    : null,
+                child: const Icon(Icons.refresh, semanticLabel: 'Refresh now'),
+              ),
             ),
             if (refresh != null) _RequestLine(request: refresh),
             const SizedBox(height: AppSpacing.md),
-            OutlinedButton(
-              key: const Key('action-rest'),
-              onPressed: signedIn && !(restDay?.isPending ?? false)
-                  ? () => _pickRestDay(context)
-                  : null,
-              child: const Icon(
-                Icons.beach_access,
-                semanticLabel: 'Declare rest day',
+            Tooltip(
+              message: 'Rest-day',
+              child: OutlinedButton(
+                key: const Key('action-rest'),
+                onPressed: signedIn && !(restDay?.isPending ?? false)
+                    ? () => _pickRestDay(context)
+                    : null,
+                child: const Icon(
+                  Icons.beach_access,
+                  semanticLabel: 'Declare rest day',
+                ),
               ),
             ),
             if (restDay != null) _RequestLine(request: restDay),
