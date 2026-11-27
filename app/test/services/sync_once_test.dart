@@ -23,12 +23,25 @@ void main() {
     String id, {
     RequestKind kind = RequestKind.refresh,
     Duration age = Duration.zero,
-  }) => SentRequest(
-    id: id,
-    kind: kind,
-    date: kind == RequestKind.restDay ? '2026-10-10' : null,
-    createdAt: DateTime.now().subtract(age),
-  );
+  }) {
+    final at = DateTime.now().subtract(age);
+    return SentRequest(
+      id: id,
+      kind: kind,
+      date: kind == RequestKind.restDay ? '2026-10-10' : null,
+      createdAt: at,
+      sentAt: at,
+    );
+  }
+
+  SentRequest queued(String id, {RequestKind kind = RequestKind.refresh}) =>
+      SentRequest(
+        id: id,
+        kind: kind,
+        date: kind == RequestKind.restDay ? '2026-10-10' : null,
+        createdAt: DateTime.now(),
+        // sentAt: null → isQueued
+      );
 
   test('parseCached: nothing, a status, or an error', () {
     expect(parseCached(null), (null, null));
@@ -161,6 +174,34 @@ void main() {
     test('reports no change when nothing moved', () async {
       final cache = LocalCache(requests: [pending('young')]);
       expect(await collectAnswers(FakeStore(), cache), isFalse);
+    });
+  });
+
+  group('uploadQueued', () {
+    test(
+      'a queued request is written to the store and saved with sentAt',
+      () async {
+        final q = queued('q');
+        await LocalCache(requests: [q]).save();
+        final store = FakeStore();
+        final out = await syncOnce(
+          open: opener(store),
+          device: () async => 'phone-1',
+        );
+        expect(out.cache.requests.single.isQueued, isFalse);
+        expect(out.cache.requests.single.sentAt, isNotNull);
+        expect(store.files[requestPath('q')], isNotNull);
+      },
+    );
+
+    test('a queued request stays queued when open returns null', () async {
+      final q = queued('q');
+      await LocalCache(requests: [q]).save();
+      final out = await syncOnce(
+        open: opener(null),
+        device: () async => 'phone-1',
+      );
+      expect(out.cache.requests.single.isQueued, isTrue);
     });
   });
 }

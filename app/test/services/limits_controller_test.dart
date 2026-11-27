@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:daily_limits/services/limits_controller.dart';
+import 'package:daily_limits/services/local_cache.dart';
 import 'package:daily_limits/services/requests.dart';
 import 'package:daily_limits/services/sync_app.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,17 +77,51 @@ void main() {
     expect(opens, 2);
   });
 
-  test('a request needs a signed-in device', () async {
+  test('a request made signed out is kept and sent once signed in', () async {
     current = null;
     await controller.declareRestDay(DateTime(2026, 10, 10));
-    expect(controller.actionError, 'Sign in first (Settings).');
+    expect(controller.actionError, isNull);
+    final queued = controller.latest(RequestKind.restDay)!;
+    expect(queued.isQueued, isTrue);
+    expect(queued.isPending, isTrue);
+    expect(store.files.keys, [kStatusPath]);
+
+    current = store;
+    await controller.refresh();
+    expect(controller.latest(RequestKind.restDay)!.isQueued, isFalse);
+    expect(store.files[requestPath(queued.id)], isNotNull);
   });
 
-  test('a failed write is reported', () async {
+  test('a failed write stays queued and goes out on a later pass', () async {
     store.failWrites = true;
     await controller.requestRefresh();
-    expect(controller.actionError, startsWith('Could not send the request'));
-    expect(controller.latest(RequestKind.refresh), isNull);
+    expect(controller.actionError, isNull);
+    final queued = controller.latest(RequestKind.refresh)!;
+    expect(queued.isQueued, isTrue);
+
+    store.failWrites = false;
+    await until(() => store.files[requestPath(queued.id)] != null);
+    await until(
+      () => controller.latest(RequestKind.refresh)?.isQueued == false,
+    );
+  });
+
+  test('the cached status shows before the first pass ends', () async {
+    final gate = Completer<void>();
+    await LocalCache(statusText: statusJson(published: DateTime.now())).save();
+    final slow = LimitsController(
+      open: () async {
+        await gate.future;
+        return store;
+      },
+      device: () async => 'phone-1',
+    );
+    addTearDown(slow.dispose);
+    slow.start();
+    await until(() => slow.status != null);
+    expect(slow.loading, isTrue);
+    gate.complete();
+    await until(() => !slow.loading);
   });
 
   test('a sent request waits, then shows the PC answer', () async {
@@ -120,11 +156,11 @@ void main() {
     expect(opens, before + 1);
   });
 
-  test('a locked device sends nothing and says why', () async {
+  test('a locked device keeps the request local and sends nothing', () async {
     locked = true;
     await controller.requestRefresh();
-    expect(controller.actionError, 'Sync locked: wrongKey');
-    expect(controller.latest(RequestKind.refresh), isNull);
+    expect(controller.outcome!.locked, isTrue);
+    expect(controller.latest(RequestKind.refresh)!.isQueued, isTrue);
     expect(store.files.keys, [kStatusPath]);
   });
 

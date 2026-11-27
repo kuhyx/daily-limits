@@ -49,8 +49,22 @@ class SyncOutcome {
   }
 }
 
+/// An outcome from the cached status text alone, with no Firebase read.
+SyncOutcome cachedOutcome(LocalCache cache) {
+  final (status, parseError) = parseCached(cache.statusText);
+  return SyncOutcome(
+    signedIn: cache.statusText != null,
+    cache: cache,
+    status: status,
+    parseError: parseError,
+  );
+}
+
 /// Runs one pass. Never throws: a failed read is recorded in the cache.
-Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
+Future<SyncOutcome> syncOnce({
+  StoreOpener open = openClient,
+  Future<String> Function() device = deviceId,
+}) async {
   final cache = await LocalCache.load();
   RemoteStore? client;
   var locked = false;
@@ -70,6 +84,7 @@ Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
     } on Object catch (error) {
       cache.lastError = 'Could not reach Firebase: $error';
     }
+    await uploadQueued(client, cache, await device());
     await collectAnswers(client, cache);
     client.close();
   }
@@ -87,13 +102,36 @@ Future<SyncOutcome> syncOnce({StoreOpener open = openClient}) async {
   );
 }
 
-/// Reads answers for every unanswered request in [cache], including ones
-/// already timed out, and marks a pending one older than [kAnswerTimeout] as
-/// timed out. Returns whether anything changed.
+/// Uploads every queued request in [cache] to Firebase, marking each as sent.
+/// A failed upload leaves the request queued; it is retried on the next sync.
+/// Returns whether any was sent.
+Future<bool> uploadQueued(
+  RemoteStore client,
+  LocalCache cache,
+  String deviceId,
+) async {
+  var anySent = false;
+  for (final request in [...cache.requests]) {
+    if (!request.isQueued) continue;
+    try {
+      final sent = await uploadRequest(client, request, deviceId: deviceId);
+      cache.replaceRequest(sent);
+      anySent = true;
+    } on Object {
+      // Leave it queued; retry on the next sync.
+    }
+  }
+  return anySent;
+}
+
+/// Reads answers for every sent, unanswered request in [cache], including
+/// ones already timed out. Marks a sent pending one older than
+/// [kAnswerTimeout] (from its upload time) as timed out. Queued requests are
+/// skipped: they are not in Firebase yet. Returns whether anything changed.
 Future<bool> collectAnswers(RemoteStore client, LocalCache cache) async {
   var changed = false;
   for (final request in [...cache.requests]) {
-    if (request.isAnswered) continue;
+    if (request.isAnswered || request.isQueued) continue;
     RequestResult? result;
     try {
       result = await readResult(client, request.id);
@@ -108,7 +146,7 @@ Future<bool> collectAnswers(RemoteStore client, LocalCache cache) async {
       }
       changed = true;
     } else if (request.isPending &&
-        DateTime.now().difference(request.createdAt) > kAnswerTimeout) {
+        DateTime.now().difference(request.sentAt!) > kAnswerTimeout) {
       cache.replaceRequest(request.settle(timedOut: true));
       changed = true;
     }

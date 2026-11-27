@@ -21,6 +21,10 @@ Read README.md first, then DOCS-sources.md.
   numbers are the enforcer's C4 fields only (`_shadow.py`).
 - **A rest day goes through screen-locker's own CLI** (`_rest_day.py`, a
   subprocess), never an import, and only with a strictly validated date.
+- **The app is offline first.** It shows the cached status before any
+  network call, and every request is saved locally first (`newRequest`,
+  `SentRequest.isQueued`) and uploaded by the next sync pass that can reach
+  Firebase (`uploadQueued`, app or background task).
 - **Firebase never breaks the cache.** The cache is written first; any sync
   failure is one warning and exit 0.
 - **A top-up is never a to-do.** An earner with `Earner.topup` (the LeetCode

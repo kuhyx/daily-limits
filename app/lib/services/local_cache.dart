@@ -105,9 +105,9 @@ class LocalCache {
   /// The union of [onDisk] and [mine] by id, oldest first.
   ///
   /// The phone never deletes a request (only pruning does), so a union loses
-  /// nothing. For an id in both, the further-along copy wins -- answered beats
-  /// timed out beats pending -- since a request only ever moves that way; on
-  /// a tie, [mine] wins.
+  /// nothing. For an id in both, the further-along copy wins -- answered (3)
+  /// beats timed out (2) beats sent pending (1) beats queued (0) -- since a
+  /// request only ever moves that way; on a tie, [mine] wins.
   static List<SentRequest> mergeRequests(
     List<SentRequest> onDisk,
     List<SentRequest> mine,
@@ -121,12 +121,14 @@ class LocalCache {
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
-  /// How far [r] has got: 0 pending, 1 timed out, 2 answered.
+  /// How far [r] has got: 0 queued, 1 sent pending, 2 timed out, 3 answered.
   static int _progress(SentRequest r) => r.isAnswered
-      ? 2
+      ? 3
+      : r.isQueued
+      ? 0
       : r.timedOut
-      ? 1
-      : 0;
+      ? 2
+      : 1;
 
   /// Replaces the tracked request with the same id.
   void replaceRequest(SentRequest updated) {

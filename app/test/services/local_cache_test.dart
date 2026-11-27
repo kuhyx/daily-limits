@@ -17,6 +17,7 @@ SentRequest _req(
   createdAt: at,
   result: answered ? const RequestResult(ok: true, message: '') : null,
   timedOut: timedOut,
+  sentAt: at,
 );
 
 void main() {
@@ -118,6 +119,25 @@ void main() {
       ]) {
         expect(LocalCache.mergeRequests([a], [b]).single, same(winner));
       }
+    });
+
+    test('a sent copy beats a queued one, whichever side has it', () {
+      final at = DateTime(2026, 10, 9);
+      final queued = SentRequest(
+        id: 'x',
+        kind: RequestKind.refresh,
+        createdAt: at,
+        // sentAt: null → isQueued
+      );
+      final sent = _req('x', at);
+      expect(
+        LocalCache.mergeRequests([queued], [sent]).single.isQueued,
+        isFalse,
+      );
+      expect(
+        LocalCache.mergeRequests([sent], [queued]).single.isQueued,
+        isFalse,
+      );
     });
 
     test('on a tie the in-memory copy wins', () {

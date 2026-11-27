@@ -65,22 +65,33 @@ class SentRequest {
     this.date,
     this.result,
     this.timedOut = false,
+    this.sentAt,
   });
 
   /// Reads one entry of the cache's `requests` list.
   factory fromJson(Map<String, dynamic> json) {
     final result = json['result'];
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(
+      ((json['created_at'] as num) * 1000).round(),
+    );
+    // Old cache files have no 'sent_at' key: treat them as sent at creation.
+    final sentAt = json.containsKey('sent_at')
+        ? json['sent_at'] == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(
+                  ((json['sent_at'] as num) * 1000).round(),
+                )
+        : createdAt;
     return SentRequest(
       id: json['id'] as String,
       kind: RequestKind.fromWire(json['kind'] as String?),
       date: json['date'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        ((json['created_at'] as num) * 1000).round(),
-      ),
+      createdAt: createdAt,
       result: result is Map<String, dynamic>
           ? RequestResult.fromJson(result)
           : null,
       timedOut: json['timed_out'] == true,
+      sentAt: sentAt,
     );
   }
 
@@ -103,6 +114,12 @@ class SentRequest {
   /// a late answer; this only changes the line and re-enables the button.
   final bool timedOut;
 
+  /// When the request was uploaded to Firebase; null = still queued locally.
+  final DateTime? sentAt;
+
+  /// Queued locally, not yet in Firebase.
+  bool get isQueued => sentAt == null;
+
   /// Still waiting for the PC, within [kAnswerTimeout].
   bool get isPending => result == null && !timedOut;
 
@@ -118,7 +135,19 @@ class SentRequest {
         createdAt: createdAt,
         result: result,
         timedOut: timedOut,
+        sentAt: sentAt,
       );
+
+  /// A copy marked as uploaded to Firebase at [at].
+  SentRequest markSent(DateTime at) => SentRequest(
+    id: id,
+    kind: kind,
+    date: date,
+    createdAt: createdAt,
+    result: result,
+    timedOut: timedOut,
+    sentAt: at,
+  );
 
   /// The cache form.
   Map<String, dynamic> toJson() => {
@@ -128,32 +157,40 @@ class SentRequest {
     'created_at': createdAt.millisecondsSinceEpoch / 1000,
     'result': result?.toJson(),
     'timed_out': timedOut,
+    'sent_at': sentAt == null ? null : sentAt!.millisecondsSinceEpoch / 1000,
   };
 }
 
-/// Writes a request for the PC from device [deviceId] and returns what was
-/// sent.
-Future<SentRequest> sendRequest(
-  RemoteStore client, {
-  required RequestKind kind,
+/// Creates a new queued request (not yet uploaded to Firebase).
+SentRequest newRequest({required RequestKind kind, String? date}) {
+  final now = DateTime.now();
+  return SentRequest(
+    id: const Uuid().v4(),
+    kind: kind,
+    date: date,
+    createdAt: now,
+  );
+}
+
+/// Uploads [request] to Firebase under its id and returns it marked as sent.
+Future<SentRequest> uploadRequest(
+  RemoteStore client,
+  SentRequest request, {
   required String deviceId,
-  String? date,
 }) async {
-  final created = DateTime.now();
-  final id = const Uuid().v4();
   final body = jsonEncode({
-    'id': id,
-    'kind': kind.wire,
-    'date': date,
-    'created_at': created.millisecondsSinceEpoch ~/ 1000,
+    'id': request.id,
+    'kind': request.kind.wire,
+    'date': request.date,
+    'created_at': request.createdAt.millisecondsSinceEpoch ~/ 1000,
     'device_id': deviceId,
   });
   await client.putFileText(
-    requestPath(id),
+    requestPath(request.id),
     body,
-    message: 'daily_limits: ${kind.wire} request',
+    message: 'daily_limits: ${request.kind.wire} request',
   );
-  return SentRequest(id: id, kind: kind, date: date, createdAt: created);
+  return request.markSent(DateTime.now());
 }
 
 /// Reads the PC's answer to [id], or null while there is none yet.

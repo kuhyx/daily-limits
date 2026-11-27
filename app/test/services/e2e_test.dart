@@ -39,11 +39,10 @@ void main() {
   test('a request reaches Firebase sealed, and the PC can read it', () async {
     final raw = FakeStore();
     final store = await openEncrypted(() async => raw);
-    final sent = await sendRequest(
+    final sent = await uploadRequest(
       store!,
-      kind: RequestKind.restDay,
+      newRequest(kind: RequestKind.restDay, date: '2026-10-10'),
       deviceId: 'phone-1',
-      date: '2026-10-10',
     );
     final blob = raw.files[requestPath(sent.id)]!;
     for (final clear in ['"kind"', 'rest_day', '2026-10-10', 'phone-1']) {

@@ -98,7 +98,13 @@ class LimitsController extends ChangeNotifier {
     try {
       do {
         _again = false;
-        _outcome = await syncOnce(open: _open);
+        // Offline first: what the phone already knows shows before any
+        // network call, so a slow or missing connection never blanks it.
+        if (_outcome == null) {
+          _outcome = cachedOutcome(await LocalCache.load());
+          _notify();
+        }
+        _outcome = await syncOnce(open: _open, device: _device);
       } while (_again);
     } finally {
       _loading = false;
@@ -114,36 +120,13 @@ class LimitsController extends ChangeNotifier {
   Future<void> declareRestDay(DateTime day) =>
       _send(RequestKind.restDay, date: isoDay(day));
 
+  /// Saves the request locally first, so it shows as waiting at once even
+  /// offline; the sync pass ([uploadQueued]) sends it when it can.
   Future<void> _send(RequestKind kind, {String? date}) async {
     _actionError = null;
-    final RemoteStore? client;
-    try {
-      client = await _open();
-    } on SyncLockedException catch (locked) {
-      _actionError = '$locked';
-      _notify();
-      return;
-    }
-    if (client == null) {
-      _actionError = 'Sign in first (Settings).';
-      _notify();
-      return;
-    }
-    try {
-      final sent = await sendRequest(
-        client,
-        kind: kind,
-        deviceId: await _device(),
-        date: date,
-      );
-      final cache = await LocalCache.load();
-      cache.requests.add(sent);
-      await cache.save();
-    } on Object catch (error) {
-      _actionError = 'Could not send the request: $error';
-    } finally {
-      client.close();
-    }
+    final cache = await LocalCache.load();
+    cache.requests.add(newRequest(kind: kind, date: date));
+    await cache.save();
     await refresh();
   }
 
@@ -168,7 +151,9 @@ class LimitsController extends ChangeNotifier {
     }
     if (client == null) return;
     final cache = await LocalCache.load();
-    final changed = await collectAnswers(client, cache);
+    final sent = await uploadQueued(client, cache, await _device());
+    final answered = await collectAnswers(client, cache);
+    final changed = sent || answered;
     client.close();
     if (!changed) {
       _schedulePoll();
