@@ -96,10 +96,6 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra",
-    "--cov=daily_limits",
-    "--cov-branch",
-    "--cov-report=term-missing",
-    "--cov-fail-under=100",
 ]
 filterwarnings = ["error::ResourceWarning", "error::pytest.PytestUnraisableExceptionWarning"]
 

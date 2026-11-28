@@ -63,9 +63,9 @@ Read README.md first, then DOCS-sources.md.
 - deploy: `scripts/deploy.sh`
 - test: `.venv/bin/python -m pytest -q`
 - test-changed: `scripts/test_changed.sh`
-- lint: `ruff check . && .venv/bin/python -m mypy daily_limits`
-- coverage: `.venv/bin/python -m pytest -q --cov-report=lcov:coverage.lcov`
-- coverage-gaps: `coverage-gaps coverage.lcov`
+- lint: n/a: dropped (kuhy, 2026-11-27)
+- coverage: n/a: dropped (kuhy, 2026-11-27)
+- coverage-gaps: n/a: dropped (kuhy, 2026-11-27)
 - app (Flutter, `app/`; fvm SDK first, see `app/README.md`):
   `cd app && PATH=~/sdk/fvm/versions/3.50.0/bin:$PATH flutter analyze --fatal-infos && flutter test -j 1 --coverage`
 

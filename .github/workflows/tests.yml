@@ -34,7 +34,6 @@ jobs:
       - name: Ensure tkinter and shellcheck
         run: |
           python -c 'import tkinter' || { sudo apt-get update; sudo apt-get install -y python3-tk; }
-          command -v shellcheck || sudo apt-get install -y shellcheck
       # The editable install points at this checkout's path, which is the same
       # on every run, so the restored venv is valid as-is.
       - name: Restore the dev venv
